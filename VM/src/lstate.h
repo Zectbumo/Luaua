@@ -222,7 +222,7 @@ typedef struct global_State
     TValue pseudotemp; // storage for temporary values used in pseudo2addr
 
     TValue registry; // registry table, used by lua_ref and LUA_REGISTRYINDEX
-    int registryfree; // next free slot in registry
+    int registryfree; // positive free-list head, or non-positive encoded high-water mark
 
     struct lua_jmpbuf* errorjmp; // jump buffer data for longjmp-style error handling
 
@@ -245,7 +245,7 @@ typedef struct global_State
     LuaTable* udatamt[LUA_UTAG_LIMIT]; // metatables for tagged userdata
 
     TValue weakregistry; // backing table for lua_weakref/lua_weakunref/lua_getweakref
-    int weakregistryfree; // next free slot in weakregistry
+    int weakregistryfree; // positive free-list head, or non-positive encoded high-water mark
     lua_EmbedderGc embeddergc; // embedder GC callback for keeping weak references alive
 
     TString* lightuserdataname[LUA_LUTAG_LIMIT]; // names for tagged lightuserdata

@@ -806,11 +806,11 @@ static int luauF_byte(lua_State* L, StkId res, TValue* arg0, int nresults, StkId
     {
         TString* ts = tsvalue(arg0);
         int i = int(nvalue(args));
-        int j = (nparams >= 3) ? (ttisnumber(args + 1) ? int(nvalue(args + 1)) : 0) : i;
+        int j = (nparams >= 3) ? (ttisnumber(args + 1) ? int(nvalue(args + 1)) : -1) : (i < INT_MAX ? i + 1 : i);
 
-        if (i >= 1 && j >= i && j <= int(ts->len))
+        if (i >= 0 && j >= i && j <= int(ts->len))
         {
-            int c = j - i + 1;
+            int c = j - i;
             const char* s = getstr(ts);
 
             // for vararg returns, we only support a single result
@@ -819,7 +819,7 @@ static int luauF_byte(lua_State* L, StkId res, TValue* arg0, int nresults, StkId
             {
                 for (int k = 0; k < c; ++k)
                 {
-                    setnvalue(res + k, uint8_t(s[i + k - 1]));
+                    setnvalue(res + k, uint8_t(s[i + k]));
                 }
 
                 return c;
@@ -911,9 +911,9 @@ static int luauF_sub(lua_State* L, StkId res, TValue* arg0, int nresults, StkId 
         if (luaC_needsGC(L))
             return -1; // we can't call luaC_checkGC so fall back to C implementation
 
-        if (i >= 1 && j >= i && unsigned(j - 1) < unsigned(ts->len))
+        if (i >= 0 && j >= i && unsigned(j) <= unsigned(ts->len))
         {
-            setsvalue(L, res, luaS_newlstr(L, getstr(ts) + (i - 1), j - i + 1));
+            setsvalue(L, res, luaS_newlstr(L, getstr(ts) + i, j - i));
             return 1;
         }
     }
@@ -1023,7 +1023,7 @@ static int luauF_tinsert(lua_State* L, StkId res, TValue* arg0, int nresults, St
         if (t->readonly)
             return -1;
 
-        int pos = luaH_getn(t) + 1;
+        int pos = luaH_getn(t);
         setobj2t(L, luaH_setnum(L, t, pos), args);
         luaC_barriert(L, t, args);
         return 0;
@@ -1041,7 +1041,7 @@ static int luauF_tunpack(lua_State* L, StkId res, TValue* arg0, int nresults, St
 
         if (nparams == 1)
             n = luaH_getn(t);
-        else if (nparams == 3 && ttisnumber(args) && ttisnumber(args + 1) && nvalue(args) == 1.0)
+        else if (nparams == 3 && ttisnumber(args) && ttisnumber(args + 1) && nvalue(args) == 0.0)
             n = int(nvalue(args + 1));
 
         if (n >= 0 && n <= t->sizearray && cast_int(L->stack_last - res) >= n && n + nparams <= LUAI_MAXCSTACK)
@@ -1147,10 +1147,10 @@ static int luauF_select(lua_State* L, StkId res, TValue* arg0, int nresults, Stk
         {
             int i = int(nvalue(arg0));
 
-            // i >= 1 && i <= n
-            if (unsigned(i - 1) < unsigned(n))
+            // i >= 0 && i < n
+            if (unsigned(i) < unsigned(n))
             {
-                setobj2s(L, res, L->base - n + (i - 1));
+                setobj2s(L, res, L->base - n + i);
                 return 1;
             }
             // note: for now we don't handle negative case (wrap around) and defer to fallback

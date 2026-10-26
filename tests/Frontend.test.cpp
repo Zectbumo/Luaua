@@ -542,10 +542,10 @@ TEST_CASE_FIXTURE(FrontendFixture, "dont_reparse_clean_file_when_linting")
     fileResolver.source["Modules/A"] = R"(
         local t = {}
 
-        for i=#t,1 do
+        for i=#t,0 do
         end
 
-        for i=#t,1,-1 do
+        for i=#t-1,-1,-1 do
         end
     )";
 
@@ -855,7 +855,7 @@ TEST_CASE_FIXTURE(FrontendFixture, "test_lint_uses_correct_config")
     fileResolver.source["Module/A"] = R"(
         local t = {}
 
-        for i=#t,1 do
+        for i=#t,0 do
         end
     )";
 

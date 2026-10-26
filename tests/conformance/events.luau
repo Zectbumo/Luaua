@@ -15,8 +15,8 @@ assert(getmetatable(ud) == "xuxu")
 
 assert(pcall(getmetatable) == false)
 assert(pcall(function() return getmetatable() end) == false)
-assert(select(2, pcall(getmetatable, {})) == nil)
-assert(select(2, pcall(getmetatable, ud)) == "xuxu")
+assert(select(1, pcall(getmetatable, {})) == nil)
+assert(select(1, pcall(getmetatable, ud)) == "xuxu")
 
 local res,err = pcall(tostring, a)
 assert(not res and err == "'__tostring' must return a string")
@@ -42,7 +42,7 @@ end
 t.__index = f
 
 a.parent = {z=25, x=12, [4] = 24}
-assert(a[1] == 10 and a.z == 28 and a[4] == 27 and a.x == "10")
+assert(a[0] == 10 and a.z == 28 and a[4] == 27 and a.x == "10")
 
 collectgarbage()
 
@@ -91,9 +91,9 @@ t.__call = f
 
 do
   local x,y = a(unpack{'a', 1})
-  assert(x==a and y[1]=='a' and y[2]==1 and y[3]==nil)
+  assert(x==a and y[0]=='a' and y[1]==1 and y[2]==nil)
   x,y = a()
-  assert(x==a and y[1]==nil)
+  assert(x==a and y[0]==nil)
 end
 
 
@@ -101,7 +101,7 @@ local b = setmetatable({}, t)
 setmetatable(b,t)
 
 function f(op)
-  return function (...) cap = {[0] = op, ...} ; return (...) end
+  return function (...) cap = {op, ...} ; return (...) end
 end
 t.__add = f("add")
 t.__sub = f("sub")
@@ -290,7 +290,7 @@ local c = setmetatable({f=b}, tt)
 
 i = 0
 x = c(3,4,5)
-assert(i == 3 and x[1] == 3 and x[3] == 5)
+assert(i == 3 and x[0] == 3 and x[2] == 5)
 
 
 print'+'

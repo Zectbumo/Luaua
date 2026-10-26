@@ -17,6 +17,7 @@
 #include "lbuffer.h"
 #include "lvector.h"
 
+#include <limits.h>
 #include <string.h>
 
 LUAU_FASTFLAG(LuauDirectFieldGet)
@@ -1508,7 +1509,7 @@ int lua_rawiter(lua_State* L, int idx, int iter)
         if (!ttisnil(e))
         {
             StkId top = L->top;
-            setnvalue(top + 0, double(iter + 1));
+            setnvalue(top + 0, double(iter));
             setobj2s(L, top + 1, e);
             api_update_top(L, top + 2);
             return iter + 1;
@@ -1707,19 +1708,26 @@ static int registryref(lua_State* L, int idx, TValue* registry, int& registryfre
     {
         LuaTable* reg = hvalue(registry);
 
-        if (registryfree != 0)
+        bool reuse = registryfree > 0;
+        if (reuse)
         { // reuse existing slot
             ref = registryfree;
         }
         else
         { // no free elements
-            ref = luaH_getn(reg);
-            ref++; // create new reference
+            if (registryfree == -INT_MAX)
+                luaG_runerror(L, "reference overflow");
+
+            // Non-positive free-list state encodes the last allocated positive reference.
+            // This must not use the zero-based sequence length: registry references start at 1.
+            ref = 1 - registryfree;
         }
 
         TValue* slot = luaH_setnum(L, reg, ref);
-        if (registryfree != 0)
+        if (reuse)
             registryfree = int(nvalue(slot));
+        else
+            registryfree = -ref;
         setobj2t(L, slot, p);
         luaC_barriert(L, reg, p);
     }
@@ -1766,19 +1774,26 @@ int lua_ref(lua_State* L, int idx)
         {
             LuaTable* reg = hvalue(registry(L));
 
-            if (g->registryfree != 0)
+            bool reuse = g->registryfree > 0;
+            if (reuse)
             { // reuse existing slot
                 ref = g->registryfree;
             }
             else
             { // no free elements
-                ref = luaH_getn(reg);
-                ref++; // create new reference
+                if (g->registryfree == -INT_MAX)
+                    luaG_runerror(L, "reference overflow");
+
+                // Non-positive free-list state encodes the last allocated positive reference.
+                // This must not use the zero-based sequence length: registry references start at 1.
+                ref = 1 - g->registryfree;
             }
 
             TValue* slot = luaH_setnum(L, reg, ref);
-            if (g->registryfree != 0)
+            if (reuse)
                 g->registryfree = int(nvalue(slot));
+            else
+                g->registryfree = -ref;
             setobj2t(L, slot, p);
             luaC_barriert(L, reg, p);
         }

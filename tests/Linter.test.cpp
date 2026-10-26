@@ -653,16 +653,16 @@ TEST_CASE_FIXTURE(Fixture, "ForRangeTable")
     LintResult result = lint(R"(
 local t = {}
 
-for i=#t,1 do
+for i=#t,0 do
 end
 
-for i=#t,1,-1 do
+for i=#t-1,-1,-1 do
 end
 )");
 
     REQUIRE(1 == result.warnings.size());
     CHECK_EQ(result.warnings[0].location.begin.line, 3);
-    CHECK_EQ(result.warnings[0].text, "For loop should iterate backwards; did you forget to specify -1 as step?");
+    CHECK_EQ(result.warnings[0].text, "For loop over a table should use length - 1 as the start, -1 as the end, and -1 as the step");
 }
 
 TEST_CASE_FIXTURE(Fixture, "ForRangeBackwards")
@@ -708,14 +708,9 @@ for i=#t,0 do
 end
 )");
 
-    REQUIRE(2 == result.warnings.size());
-    CHECK_EQ(result.warnings[0].location.begin.line, 1);
-    CHECK_EQ(result.warnings[0].text, "For loop starts at 0, but arrays start at 1");
-    CHECK_EQ(result.warnings[1].location.begin.line, 7);
-    CHECK_EQ(
-        result.warnings[1].text,
-        "For loop should iterate backwards; did you forget to specify -1 as step? Also consider changing 0 to 1 since arrays start at 1"
-    );
+    REQUIRE(1 == result.warnings.size());
+    CHECK_EQ(result.warnings[0].location.begin.line, 7);
+    CHECK_EQ(result.warnings[0].text, "For loop over a table should use length - 1 as the start, -1 as the end, and -1 as the step");
 }
 
 TEST_CASE_FIXTURE(Fixture, "UnbalancedAssignment")
@@ -1126,11 +1121,11 @@ local s = ...
 string.find(s, "%q")
 
 -- raw string find
-string.find(s, "%q", 1, true)
-string.find(s, "%q", 1, math.random() < 0.5)
+string.find(s, "%q", 0, true)
+string.find(s, "%q", 0, math.random() < 0.5)
 
 -- incorrect character class specifier
-string.find(s, "%q", 1, false)
+string.find(s, "%q", 0, false)
 
 -- missing arguments
 string.find()
@@ -1224,11 +1219,11 @@ _ = {
 
 _ = {
     1, 2, 3,
-    [1] = 42
+    [0] = 42
 }
 
 _ = {
-    [3] = 42,
+    [2] = 42,
     1, 2, 3,
 }
 
@@ -1240,14 +1235,14 @@ local _: {
 
 _ = {
     1, 2, 3,
-    [0] = 42,
-    [4] = 42,
+    [-1] = 42,
+    [3] = 42,
 }
 
 _ = {
-    [1] = 1,
-    [2] = 2,
-    [1] = 3,
+    [0] = 1,
+    [1] = 2,
+    [0] = 3,
 }
 
 function _foo(): { first: number, second: string, first: boolean }
@@ -1257,10 +1252,10 @@ end
     REQUIRE(7 == result.warnings.size());
     CHECK_EQ(result.warnings[0].text, "Table field 'first' is a duplicate; previously defined at line 3");
     CHECK_EQ(result.warnings[1].text, "Table field 'first' is a duplicate; previously defined at line 9");
-    CHECK_EQ(result.warnings[2].text, "Table index 1 is a duplicate; previously defined as a list entry");
-    CHECK_EQ(result.warnings[3].text, "Table index 3 is a duplicate; previously defined as a list entry");
+    CHECK_EQ(result.warnings[2].text, "Table index 0 is a duplicate; previously defined as a list entry");
+    CHECK_EQ(result.warnings[3].text, "Table index 2 is a duplicate; previously defined as a list entry");
     CHECK_EQ(result.warnings[4].text, "Table type field 'first' is a duplicate; previously defined at line 24");
-    CHECK_EQ(result.warnings[5].text, "Table index 1 is a duplicate; previously defined at line 36");
+    CHECK_EQ(result.warnings[5].text, "Table index 0 is a duplicate; previously defined at line 36");
     CHECK_EQ(result.warnings[6].text, "Table type field 'first' is a duplicate; previously defined at line 41");
 }
 
@@ -2143,17 +2138,17 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "TableOperations")
 local t = {}
 local tt = {}
 
-table.insert(t, #t, 42)
-table.insert(t, (#t), 42) -- silenced
+table.insert(t, #t-1, 42)
+table.insert(t, (#t-1), 42) -- silenced
 
-table.insert(t, #t + 1, 42)
-table.insert(t, #tt + 1, 42) -- different table, ok
+table.insert(t, #t, 42)
+table.insert(t, #tt, 42) -- different table, ok
 
 table.insert(t, 0, 42)
 
 table.remove(t, 0)
 
-table.remove(t, #t-1)
+table.remove(t, #t)
 
 table.insert(t, string.find("hello", "h"))
 
@@ -2164,31 +2159,22 @@ table.create(42, {})
 table.create(42, {} :: {})
 )");
 
-    REQUIRE(10 == result.warnings.size());
+    REQUIRE(6 == result.warnings.size());
     CHECK_EQ(
         result.warnings[0].text,
-        "table.insert will insert the value before the last element, which is likely a bug; consider removing the "
-        "second argument or wrap it in parentheses to silence"
+        "table.insert will insert the value before the last element, which is likely a bug; wrap the index in parentheses to silence"
     );
     CHECK_EQ(result.warnings[1].text, "table.insert will append the value to the table; consider removing the second argument for efficiency");
-    CHECK_EQ(result.warnings[2].text, "table.insert uses index 0 but arrays are 1-based; did you mean 1 instead?");
-    CHECK_EQ(result.warnings[3].text, "table.remove uses index 0 but arrays are 1-based; did you mean 1 instead?");
+    CHECK_EQ(result.warnings[2].text, "table.remove index #t is past the last element; use #t-1 or omit the second argument");
     CHECK_EQ(
-        result.warnings[4].text,
-        "table.remove will remove the value before the last element, which is likely a bug; consider removing the "
-        "second argument or wrap it in parentheses to silence"
-    );
-    CHECK_EQ(
-        result.warnings[5].text,
+        result.warnings[3].text,
         "table.insert may change behavior if the call returns more than one result; consider adding parentheses around second argument"
     );
-    CHECK_EQ(result.warnings[6].text, "table.move uses index 0 but arrays are 1-based; did you mean 1 instead?");
-    CHECK_EQ(result.warnings[7].text, "table.move uses index 0 but arrays are 1-based; did you mean 1 instead?");
     CHECK_EQ(
-        result.warnings[8].text, "table.create with a table literal will reuse the same object for all elements; consider using a for loop instead"
+        result.warnings[4].text, "table.create with a table literal will reuse the same object for all elements; consider using a for loop instead"
     );
     CHECK_EQ(
-        result.warnings[9].text, "table.create with a table literal will reuse the same object for all elements; consider using a for loop instead"
+        result.warnings[5].text, "table.create with a table literal will reuse the same object for all elements; consider using a for loop instead"
     );
 }
 
@@ -2235,8 +2221,8 @@ ipairs(t8)
 -- type checker assigns a type of generic table with the 'sub' member; we don't emit warnings on generic tables
 -- to avoid generating a false positive here
 function _impliedstring(element, text)
-        for i = 1, #text do
-                element:sendText(text:sub(i, i))
+        for i = 0, #text do
+                element:sendText(text:sub(i, i + 1))
         end
 end
 )");

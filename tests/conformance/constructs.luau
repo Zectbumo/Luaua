@@ -43,14 +43,14 @@ function f (i)
 end
 
 x = {f(3), f(5), f(10);};
-assert(x[1] == 3 and x[2] == 5 and x[3] == 10 and x[4] == 9 and x[12] == 1);
+assert(x[0] == 3 and x[1] == 5 and x[2] == 10 and x[3] == 9 and x[11] == 1);
 assert(x[nil] == nil)
 x = {f'alo', f'xixi', nil};
-assert(x[1] == 'alo' and x[2] == 'xixi' and x[3] == nil);
+assert(x[0] == 'alo' and x[1] == 'xixi' and x[2] == nil);
 x = {f'alo'..'xixi'};
-assert(x[1] == 'aloxixi')
+assert(x[0] == 'aloxixi')
 x = {f{}}
-assert(x[2] == 'jojo' and type(x[1]) == 'table')
+assert(x[1] == 'jojo' and type(x[0]) == 'table')
 
 
 local f = function (i)
@@ -68,10 +68,10 @@ i=3;
 t = {};
 a=nil
 while not a do
-  a=0; for i=1,n do for i=i,1,-1 do a=a+1; t[i]=1; end; end;
+  a=0; for i=0,n do for i=i,-1,-1 do a=a+1; t[i]=1; end; end;
 end
 assert(a == n*(n+1)/2 and i==3);
-assert(t[1] and t[n] and not t[0] and not t[n+1])
+assert(t[0] and t[n-1] and not t[-1] and not t[n])
 
 function f(b)
   local x = 1;
@@ -101,13 +101,13 @@ assert(f(3) == 'a' and f(12) == 'b' and f(26) == 'c' and f(100) == 8)
 
 local a, b = nil, 23
 x = {f(100)*2+3 or a, a or b+2}
-assert(x[1] == 19 and x[2] == 25)
+assert(x[0] == 19 and x[1] == 25)
 x = {f=2+3 or a, a = b+2}
 assert(x.f == 5 and x.a == 25)
 
 a={y=1}
 x = {a.y}
-assert(x[1] == 1)
+assert(x[0] == 1)
 
 function f(i)
   while 1 do
@@ -203,7 +203,7 @@ function ID(x) return x end
 
 function f(t, i)
   local b = t.n
-  local res = (math.floor(i/c)%b)+1
+  local res = math.floor(i/c)%b
   c = c*b
   return t[res]
 end

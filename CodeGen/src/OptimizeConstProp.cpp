@@ -2219,7 +2219,7 @@ static void constPropInInst(ConstPropState& state, IrBuilder& build, IrFunction&
         {
             if (idx && limit)
             {
-                if (compare(*idx, *limit, IrCondition::NotLessEqual))
+                if (compare(*idx, *limit, IrCondition::NotLess))
                     replace(function, block, index, {IrCmd::JUMP, {OP_E(inst)}});
                 else
                     replace(function, block, index, {IrCmd::JUMP, {OP_D(inst)}});
@@ -2230,7 +2230,7 @@ static void constPropInInst(ConstPropState& state, IrBuilder& build, IrFunction&
                     function,
                     block,
                     index,
-                    IrInst{IrCmd::JUMP_CMP_NUM, {OP_A(inst), OP_B(inst), build.cond(IrCondition::NotLessEqual), OP_E(inst), OP_D(inst)}}
+                    IrInst{IrCmd::JUMP_CMP_NUM, {OP_A(inst), OP_B(inst), build.cond(IrCondition::NotLess), OP_E(inst), OP_D(inst)}}
                 );
             }
         }
@@ -2238,7 +2238,7 @@ static void constPropInInst(ConstPropState& state, IrBuilder& build, IrFunction&
         {
             if (idx && limit)
             {
-                if (compare(*limit, *idx, IrCondition::NotLessEqual))
+                if (compare(*limit, *idx, IrCondition::NotLess))
                     replace(function, block, index, {IrCmd::JUMP, {OP_E(inst)}});
                 else
                     replace(function, block, index, {IrCmd::JUMP, {OP_D(inst)}});
@@ -2249,7 +2249,7 @@ static void constPropInInst(ConstPropState& state, IrBuilder& build, IrFunction&
                     function,
                     block,
                     index,
-                    IrInst{IrCmd::JUMP_CMP_NUM, {OP_B(inst), OP_A(inst), build.cond(IrCondition::NotLessEqual), OP_E(inst), OP_D(inst)}}
+                    IrInst{IrCmd::JUMP_CMP_NUM, {OP_B(inst), OP_A(inst), build.cond(IrCondition::NotLess), OP_E(inst), OP_D(inst)}}
                 );
             }
         }

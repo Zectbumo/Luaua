@@ -22,6 +22,7 @@
 #include "Luau/TypeUtils.h"
 
 #include <algorithm>
+#include <limits>
 #include <string_view>
 
 LUAU_FASTFLAG(LuauCyclicRequireTypeInference)
@@ -1328,6 +1329,25 @@ TypeId makeStringMetatable(NotNull<BuiltinTypes> builtinTypes, SolverMode mode)
     return arena->addType(TableType{{{{"__index", {tableType}}}}, std::nullopt, TypeLevel{}, TableState::Sealed});
 }
 
+static std::optional<double> getSelectOffset(AstExpr* arg)
+{
+    double value;
+
+    if (AstExprConstantNumber* number = arg->as<AstExprConstantNumber>())
+        value = number->value;
+    else if (AstExprUnary* unary = arg->as<AstExprUnary>(); unary && unary->op == AstExprUnary::Op::Minus)
+    {
+        if (AstExprConstantNumber* number = unary->expr->as<AstExprConstantNumber>())
+            value = -number->value;
+        else
+            return std::nullopt;
+    }
+    else
+        return std::nullopt;
+
+    return value;
+}
+
 std::optional<WithPredicate<TypePackId>> MagicSelect::handleOldSolver(
     TypeChecker& typechecker,
     const ScopePtr& scope,
@@ -1346,20 +1366,46 @@ std::optional<WithPredicate<TypePackId>> MagicSelect::handleOldSolver(
     }
 
     AstExpr* arg1 = expr.args.data[0];
-    if (AstExprConstantNumber* num = arg1->as<AstExprConstantNumber>())
+    if (std::optional<double> selectOffset = getSelectOffset(arg1))
     {
         const auto& [v, tail] = flatten(paramPack);
 
-        int offset = int(num->value);
-        if (offset > 0)
+        if (*selectOffset >= double(std::numeric_limits<int>::min()) && *selectOffset <= double(std::numeric_limits<int>::max()))
         {
-            if (size_t(offset) < v.size())
+            int offset = int(*selectOffset);
+            if (offset >= 0)
             {
-                std::vector<TypeId> result(v.begin() + offset, v.end());
-                return WithPredicate<TypePackId>{typechecker.currentModule->internalTypes->addTypePack(TypePack{std::move(result), tail})};
+                size_t start = size_t(offset) + 1; // skip the selector; positive offsets are zero-based
+
+                if (start <= v.size())
+                {
+                    std::vector<TypeId> result(v.begin() + start, v.end());
+                    return WithPredicate<TypePackId>{typechecker.currentModule->internalTypes->addTypePack(TypePack{std::move(result), tail})};
+                }
+                else if (tail)
+                {
+                    if (get<VariadicTypePack>(follow(*tail)))
+                        return WithPredicate<TypePackId>{*tail};
+
+                    return std::nullopt;
+                }
+                else
+                    return WithPredicate<TypePackId>{typechecker.currentModule->internalTypes->addTypePack(TypePack{})};
             }
-            else if (tail)
-                return WithPredicate<TypePackId>{*tail};
+            else if (!tail)
+            {
+                size_t valueCount = v.empty() ? 0 : v.size() - 1;
+                size_t fromEnd = size_t(-int64_t(offset));
+
+                if (fromEnd <= valueCount)
+                {
+                    size_t start = v.size() - fromEnd;
+                    std::vector<TypeId> result(v.begin() + start, v.end());
+                    return WithPredicate<TypePackId>{typechecker.currentModule->internalTypes->addTypePack(TypePack{std::move(result)})};
+                }
+            }
+            else
+                return std::nullopt;
         }
 
         typechecker.reportError(TypeError{arg1->location, GenericError{"bad argument #1 to select (index out of range)"}});
@@ -1388,24 +1434,67 @@ bool MagicSelect::infer(const MagicFunctionCallContext& context)
 
     AstExpr* arg1 = context.callSite->args.data[0];
 
-    if (AstExprConstantNumber* num = arg1->as<AstExprConstantNumber>())
+    if (std::optional<double> selectOffset = getSelectOffset(arg1))
     {
         const auto& [v, tail] = flatten(context.arguments);
 
-        int offset = int(num->value);
-        if (offset > 0)
+        if (!(*selectOffset >= double(std::numeric_limits<int>::min()) && *selectOffset <= double(std::numeric_limits<int>::max())))
         {
-            if (size_t(offset) < v.size())
+            if (FFlag::LuauCyclicRequireTypeInference)
+                context.solver->reportError(
+                    GenericError{"bad argument #1 to select (index out of range)"}, arg1->location, *context.constraint->moduleName
+                );
+            else
+                context.solver->DEPRECATED_reportError(TypeError{arg1->location, GenericError{"bad argument #1 to select (index out of range)"}});
+
+            return false;
+        }
+
+        int offset = int(*selectOffset);
+        if (offset >= 0)
+        {
+            size_t start = size_t(offset) + 1; // skip the selector; positive offsets are zero-based
+
+            if (start <= v.size())
             {
-                std::vector<TypeId> res(v.begin() + offset, v.end());
+                std::vector<TypeId> res(v.begin() + start, v.end());
                 TypePackId resTypePack = context.solver->arena->addTypePack({std::move(res), tail});
                 asMutable(context.result)->ty.emplace<BoundTypePack>(resTypePack);
             }
-            else if (tail)
+            else if (tail && get<VariadicTypePack>(follow(*tail)))
                 asMutable(context.result)->ty.emplace<BoundTypePack>(*tail);
+            else if (tail)
+                return false;
+            else
+            {
+                TypePackId emptyTypePack = context.solver->arena->addTypePack(TypePack{});
+                asMutable(context.result)->ty.emplace<BoundTypePack>(emptyTypePack);
+            }
 
             return true;
         }
+
+        if (tail)
+            return false;
+
+        size_t valueCount = v.empty() ? 0 : v.size() - 1;
+        size_t fromEnd = size_t(-int64_t(offset));
+
+        if (fromEnd <= valueCount)
+        {
+            size_t start = v.size() - fromEnd;
+            std::vector<TypeId> res(v.begin() + start, v.end());
+            TypePackId resTypePack = context.solver->arena->addTypePack(TypePack{std::move(res)});
+            asMutable(context.result)->ty.emplace<BoundTypePack>(resTypePack);
+            return true;
+        }
+
+        if (FFlag::LuauCyclicRequireTypeInference)
+            context.solver->reportError(
+                GenericError{"bad argument #1 to select (index out of range)"}, arg1->location, *context.constraint->moduleName
+            );
+        else
+            context.solver->DEPRECATED_reportError(TypeError{arg1->location, GenericError{"bad argument #1 to select (index out of range)"}});
 
         return false;
     }

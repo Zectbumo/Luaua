@@ -7,7 +7,7 @@ local unpack = table.unpack
 local A,B = 0,{g=10}
 function f(x)
   local a = {}
-  for i=1,1000 do
+  for i=0,1000 do
     local y = 0
     do
       a[i] = function () B.g = B.g+1; y = y+x; return y+A end
@@ -16,8 +16,8 @@ function f(x)
   local dummy = function () return a[A] end
   collectgarbage()
   A = 1; assert(dummy() == a[1]); A = 0;
-  assert(a[1]() == x)
-  assert(a[3]() == x)
+  assert(a[0]() == x)
+  assert(a[2]() == x)
   collectgarbage()
   assert(B.g == 12)
   return a
@@ -25,54 +25,54 @@ end
 
 a = f(10)
 -- force a GC in this level
-local x = {[1] = {}}   -- to detect a GC
+local x = {[0] = {}}   -- to detect a GC
 setmetatable(x, {__mode = 'kv'})
-while x[1] do   -- repeat until GC
+while x[0] do   -- repeat until GC
   local a = A..A..A..A  -- create garbage
   A = A+1
 end
+assert(a[0]() == 20+A)
+assert(a[0]() == 30+A)
+assert(a[1]() == 10+A)
+collectgarbage()
 assert(a[1]() == 20+A)
 assert(a[1]() == 30+A)
-assert(a[2]() == 10+A)
-collectgarbage()
 assert(a[2]() == 20+A)
-assert(a[2]() == 30+A)
-assert(a[3]() == 20+A)
-assert(a[8]() == 10+A)
+assert(a[7]() == 10+A)
 assert(getmetatable(x).__mode == 'kv')
 assert(B.g == 19)
 
 -- testing closures with 'for' control variable
 a = {}
-for i=1,10 do
+for i=0,10 do
   a[i] = {set = function(x) i=x end, get = function () return i end}
-  if i == 3 then break end
+  if i == 2 then break end
 end
-assert(a[4] == nil)
-a[1].set(10)
+assert(a[3] == nil)
+a[0].set(10)
+assert(a[1].get() == 1)
+a[1].set('a')
 assert(a[2].get() == 2)
-a[2].set('a')
-assert(a[3].get() == 3)
-assert(a[2].get() == 'a')
+assert(a[1].get() == 'a')
 
 a = {}
 for i, k in pairs{'a', 'b'} do
   a[i] = {set = function(x, y) i=x; k=y end,
           get = function () return i, k end}
-  if i == 2 then break end
+  if i == 1 then break end
 end
-a[1].set(10, 20)
-local r,s = a[2].get()
-assert(r == 2 and s == 'b')
-r,s = a[1].get()
+a[0].set(10, 20)
+local r,s = a[1].get()
+assert(r == 1 and s == 'b')
+r,s = a[0].get()
 assert(r == 10 and s == 20)
-a[2].set('a', 'b')
-r,s = a[2].get()
+a[1].set('a', 'b')
+r,s = a[1].get()
 assert(r == "a" and s == "b")
 
 
 -- testing closures with 'for' control variable x break
-for i=1,3 do
+for i=1,4 do
   f = function () return i end
   break
 end
@@ -82,8 +82,8 @@ for k, v in pairs{"a", "b"} do
   f = function () return k, v end
   break
 end
-assert(({f()})[1] == 1)
-assert(({f()})[2] == "a")
+assert(({f()})[0] == 0)
+assert(({f()})[1] == "a")
 
 
 -- testing closure x break x return x errors
@@ -109,7 +109,7 @@ function f(x)
   end
 end
 
-for i=1,3 do
+for i=1,4 do
   f(i)
   assert(b('get') == 'xuxu')
   b('set', 10); assert(b('get') == 10+i)
@@ -136,12 +136,12 @@ assert(y(20)(30) == 60+w)
 -- testing closures x repeat-until
 
 local a = {}
-local i = 1
+local i = 0
 repeat
   local x = i
   a[i] = function () i = x+1; return x end
-until i > 10 or a[i]() ~= x
-assert(i == 11 and a[1]() == 1 and a[3]() == 3 and i == 4)
+until i >= 10 or a[i]() ~= x
+assert(i == 10 and a[0]() == 0 and a[2]() == 2 and i == 3)
 
 print'+'
 
@@ -196,7 +196,7 @@ function foo (a, ...)
   assert(coroutine.running() == f)
   assert(coroutine.status(f) == "running")
   local arg = {...}
-  for i=1,table.getn(arg) do
+  for i=0,table.getn(arg) do
     _G.x = {coroutine.yield(unpack(arg[i]))}
   end
   return unpack(a)
@@ -225,12 +225,12 @@ assert(not s and string.find(a, "dead") and coroutine.status(f) == "dead")
 -- yields in tail calls
 local function foo (i) return coroutine.yield(i) end
 f = coroutine.wrap(function ()
-  for i=1,10 do
+  for i=1,11 do
     assert(foo(i) == _G.x)
   end
   return 'a'
 end)
-for i=1,10 do _G.x = i; assert(f(i) == i) end
+for i=1,11 do _G.x = i; assert(f(i) == i) end
 _G.x = 'xuxu'; assert(f('xuxu') == 'a')
 
 -- recursive
@@ -241,7 +241,7 @@ end
 
 f = coroutine.wrap(pf)
 local s=1
-for i=1,10 do
+for i=1,11 do
   assert(f(1, 1) == s)
   s = s*i
 end
@@ -249,7 +249,7 @@ end
 -- sieve
 function gen (n)
   return coroutine.wrap(function ()
-    for i=2,n do coroutine.yield(i) end
+    for i=2,n+1 do coroutine.yield(i) end
   end)
 end
 
@@ -273,7 +273,7 @@ while 1 do
   x = filter(n, x)
 end
 
-assert(table.getn(a) == 25 and a[table.getn(a)] == 97)
+assert(table.getn(a) == 25 and a[table.getn(a)-1] == 97)
 
 
 -- errors in coroutines
@@ -305,7 +305,7 @@ assert(not a and string.find(b, "dead") and coroutine.status(x) == "dead")
 function all (a, n, k)
   if k == 0 then coroutine.yield(a)
   else
-    for i=1,n do
+    for i=1,n+1 do
       a[k] = i
       all(a, n, k-1)
     end
@@ -330,13 +330,13 @@ local x = coroutine.wrap (function ()
             end
           end)
 
-C[1] = x;
+C[0] = x;
 
 local f = x()
 assert(f() == 21 and x()() == 32 and x() == f)
 x = nil
 collectgarbage()
--- assert(C[1] == nil)
+-- assert(C[0] == nil)
 assert(f() == 43 and f() == 53)
 
 

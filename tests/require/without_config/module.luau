@@ -1,3 +1,3 @@
 local result = require("./dependency")
-result[#result+1] = "required into module"
+result[#result] = "required into module"
 return result

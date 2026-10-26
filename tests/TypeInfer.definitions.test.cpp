@@ -523,7 +523,7 @@ TEST_CASE_FIXTURE(Fixture, "class_definitions_reference_other_extern_types")
 
     CheckResult result = check(R"(
         local a: Channel
-        local b = a.Messages[1]
+        local b = a.Messages[0]
         local c = b.Channel
     )");
 
@@ -580,13 +580,14 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "cli_142285_reduce_minted_union_func")
         end
 
         local function find<T>(array: {T}, item: T): number?
-            local l, m, r = 1, middle(1, #array), #array
-            while l <= r do
+            local l, r = 0, #array
+            while l < r do
+                local m = middle(l, r)
                 if item <= array[m] then
                     if item == array[m] then return m end
-                    m, r = middle(l, m-1), m-1
+                    r = m
                 else
-                    l, m = middle(m+1, r), m+1
+                    l = m + 1
                 end
             end
         return nil
@@ -613,10 +614,10 @@ TEST_CASE_FIXTURE(Fixture, "vector3_overflow")
     CheckResult result = check(R"(
 --!strict
 local function graphPoint(t : number, points : { Vector3 }) : Vector3
-    local n : number = #points - 1
+    local n : number = #points
     local p : Vector3 = (nil :: any)
     for i = 0, n do
-        local x = points[i + 1]
+        local x = points[i]
         p = p and p + x or x
     end
     return p

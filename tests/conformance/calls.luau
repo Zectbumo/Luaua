@@ -63,10 +63,10 @@ function f(a,b,c) local d = 'a'; t={a,b,c,d} end
 
 f(      -- this line change must be valid
   1,2)
-assert(t[1] == 1 and t[2] == 2 and t[3] == nil and t[4] == 'a')
+assert(t[0] == 1 and t[1] == 2 and t[2] == nil and t[3] == 'a')
 f(1,2,   -- this one too
       3,4)
-assert(t[1] == 1 and t[2] == 2 and t[3] == 3 and t[4] == 'a')
+assert(t[0] == 1 and t[1] == 2 and t[2] == 3 and t[3] == 'a')
 
 function fat(x)
   if x <= 1 then return 1
@@ -120,25 +120,25 @@ assert(a == 23 and (function (x) return x*2 end)(20) == 40)
 
 local x,y,z,a
 a = {}; lim = 2000
-for i=1, lim do a[i]=i end
-assert(select(lim, unpack(a)) == lim and select('#', unpack(a)) == lim)
+for i=0, lim do a[i]=i end
+assert(select(lim-1, unpack(a)) == lim-1 and select('#', unpack(a)) == lim)
 x = unpack(a)
-assert(x == 1)
+assert(x == 0)
 x = {unpack(a)}
-assert(table.getn(x) == lim and x[1] == 1 and x[lim] == lim)
-x = {unpack(a, lim-2)}
-assert(table.getn(x) == 3 and x[1] == lim-2 and x[3] == lim)
-x = {unpack(a, 10, 6)}
+assert(table.getn(x) == lim and x[0] == 0 and x[lim-1] == lim-1)
+x = {unpack(a, lim-3)}
+assert(table.getn(x) == 3 and x[0] == lim-3 and x[2] == lim-1)
+x = {unpack(a, 9, 6)}
 assert(next(x) == nil)   -- no elements
-x = {unpack(a, 11, 10)}
+x = {unpack(a, 10, 10)}
 assert(next(x) == nil)   -- no elements
-x,y = unpack(a, 10, 10)
-assert(x == 10 and y == nil)
-x,y,z = unpack(a, 10, 11)
-assert(x == 10 and y == 11 and z == nil)
+x,y = unpack(a, 9, 10)
+assert(x == 9 and y == nil)
+x,y,z = unpack(a, 9, 11)
+assert(x == 9 and y == 10 and z == nil)
 a,x = unpack{1}
 assert(a==1 and x==nil)
-a,x = unpack({1,2}, 1, 1)
+a,x = unpack({1,2}, 0, 1)
 assert(a==1 and x==nil)
 
 
@@ -182,8 +182,8 @@ print('+')
 -- testing multiple returns
 
 function unlpack (t, i)
-  i = i or 1
-  if (i <= table.getn(t)) then
+  i = i or 0
+  if (i < table.getn(t)) then
     return t[i], unlpack(t, i+1)
   end
 end
@@ -211,7 +211,7 @@ a,b,c,d = unlpack(pack(ret2(f()), (ret2(f()))))
 assert(a==1 and b==1 and c==nil and d==nil)
 
 a = ret2{ unlpack{1,2,3}, unlpack{3,2,1}, unlpack{"a", "b"}}
-assert(a[1] == 1 and a[2] == 3 and a[3] == "a" and a[4] == "b")
+assert(a[0] == 1 and a[1] == 3 and a[2] == "a" and a[3] == "b")
 
 
 -- testing calls with 'incorrect' arguments
@@ -236,13 +236,13 @@ end
 local x = { }
 local y = { }
 
-x[1] = 1234
-x[2] = 4567
+x[0] = 1234
+x[1] = 4567
 
 clobber()
 
-assert(x[1] == 1234)
-assert(x[2] == 4567)
+assert(x[0] == 1234)
+assert(x[1] == 4567)
 
 -- C-stack overflow while handling C-stack overflow
 if not limitedstack then

@@ -12,6 +12,7 @@
 #include "Luau/ModuleResolver.h"
 #include "Luau/TypeInfer.h"
 #include "Luau/BytecodeBuilder.h"
+#include "Luau/Bytecode.h"
 #include "Luau/Frontend.h"
 #include "Luau/Compiler.h"
 #include "Luau/CodeGen.h"
@@ -1232,6 +1233,26 @@ TEST_CASE("Assert")
 TEST_CASE("Basic")
 {
     runConformance("basic.luau");
+}
+
+TEST_CASE("ZeroBased")
+{
+    runConformance("zero_based.luau");
+}
+
+TEST_CASE("RejectsUnmarkedLuauBytecode")
+{
+    std::string bytecode = Luau::compile("return 42");
+    REQUIRE(bytecode.size() >= 2);
+    REQUIRE_EQ(uint8_t(bytecode[0]), uint8_t(LBC_BYTECODE_MARKER));
+
+    bytecode.erase(bytecode.begin());
+
+    StateRef state(luaL_newstate(), lua_close);
+    int result = luau_load(state.get(), "=legacy", bytecode.data(), bytecode.size(), 0);
+    CHECK(result != 0);
+    REQUIRE(lua_isstring(state.get(), -1));
+    CHECK(std::string(lua_tostring(state.get(), -1)).find("bytecode dialect mismatch") != std::string::npos);
 }
 
 TEST_CASE("Buffers")
@@ -3201,7 +3222,7 @@ TEST_CASE("Coverage")
                                     lua_rawseti(L, -2, int(i));
                                 }
 
-                            lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
+                            lua_rawseti(L, -2, lua_objlen(L, -2));
                         }
                     );
 
@@ -3360,11 +3381,11 @@ TEST_CASE("GCDump")
 local x
 x = {}
 local function f()
-    x[1] = math.abs(42)
+    x[0] = math.abs(42)
 end
 function foo()
-    x[2] = ''
-    for i = 1, 10000 do x[2] ..= '1234567890' end
+    x[1] = ''
+    for i = 0, 10000 do x[1] ..= '1234567890' end
 end
 foo()
 
@@ -3493,7 +3514,7 @@ TEST_CASE("Interrupt")
     // and set it back to nullptr once the interrupt triggered.
 
     // define the interrupt to check the expected hits
-    static const int expectedhits[] = {11, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 20, 15, 15, 15, 15, 18, 25, 23, 26};
+    static const int expectedhits[] = {11, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 20, 15, 15, 15, 15, 18, 25, 23, 26};
 
     lua_callbacks(L)->interrupt = [](lua_State* L, int gc)
     {
@@ -3552,8 +3573,17 @@ TEST_CASE("Interrupt")
 
         index = 0;
         int status = lua_resume(T, nullptr, 0);
-        CHECK(status == LUA_YIELD);
-        CHECK(index == 11);
+        if (test == 5 || test == 6)
+        {
+            // A zero-step numeric loop whose start equals its exclusive end has no iterations.
+            CHECK(status == LUA_OK);
+            CHECK(index == 1);
+        }
+        else
+        {
+            CHECK(status == LUA_YIELD);
+            CHECK(index == 11);
+        }
 
         // abandon the thread
         lua_pop(L, 1);
@@ -4899,7 +4929,7 @@ TEST_CASE("BytecodeDistributionPerFunctionTest")
     const char* source = R"(
 local function first(n, p)
   local t = {}
-  for i=1,p do t[i] = i*10 end
+  for i=0,p do t[i] = i*10 end
 
   local function inner(_,n)
     if n > 0 then
@@ -4911,7 +4941,7 @@ local function first(n, p)
 end
 
 local function second(x)
- return x[1]
+ return x[0]
 end
 )";
 

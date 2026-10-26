@@ -20,7 +20,7 @@ assert(not pcall(coroutine.status, 0))
 
 local function eqtab (t1, t2)
   assert(#t1 == #t2)
-  for i = 1, #t1 do
+  for i = 0, #t1 do
     local v = t1[i]
     assert(t2[i] == v)
   end
@@ -36,7 +36,7 @@ function foo (a, ...)
   assert(coroutine.status(f) == "running")
   local arg = {...}
   assert(coroutine.isyieldable())
-  for i=1,#arg do
+  for i=0,#arg do
     _G.x = {coroutine.yield(table.unpack(arg[i]))}
   end
   return table.unpack(a)
@@ -65,12 +65,12 @@ assert(not s and string.find(a, "dead") and coroutine.status(f) == "dead")
 -- yields in tail calls
 local function foo (i) return coroutine.yield(i) end
 f = coroutine.wrap(function ()
-  for i=1,10 do
+  for i=1,11 do
     assert(foo(i) == _G.x)
   end
   return 'a'
 end)
-for i=1,10 do _G.x = i; assert(f(i) == i) end
+for i=1,11 do _G.x = i; assert(f(i) == i) end
 _G.x = 'xuxu'; assert(f('xuxu') == 'a')
 
 -- recursive
@@ -81,7 +81,7 @@ end
 
 f = coroutine.wrap(pf)
 local s=1
-for i=1,10 do
+for i=1,11 do
   assert(f(1, 1) == s)
   s = s*i
 end
@@ -89,7 +89,7 @@ end
 -- sieve
 function gen (n)
   return coroutine.wrap(function ()
-    for i=2,n do coroutine.yield(i) end
+    for i=2,n+1 do coroutine.yield(i) end
   end)
 end
 
@@ -113,7 +113,7 @@ while 1 do
   x = filter(n, x)
 end
 
-assert(#a == 22 and a[#a] == 79)
+assert(#a == 22 and a[#a-1] == 79)
 x, a = nil
 
 
@@ -171,7 +171,7 @@ assert(not a and string.find(b, "dead") and coroutine.status(x) == "dead")
 function all (a, n, k)
   if k == 0 then coroutine.yield(a)
   else
-    for i=1,n do
+    for i=1,n+1 do
       a[k] = i
       all(a, n, k-1)
     end
@@ -196,13 +196,13 @@ local x = coroutine.wrap (function ()
             end
           end)
 
-C[1] = x;
+C[0] = x;
 
 local f = x()
 assert(f() == 21 and x()() == 32 and x() == f)
 x = nil
 collectgarbage()
-assert(C[1] == undef)
+assert(C[0] == undef)
 assert(f() == 43 and f() == 53)
 
 
@@ -276,11 +276,11 @@ if not limitedstack then
   local j = 2^9
   local lim = 1000000    -- (C stack limit; assume 32-bit machine)
   local t = {lim - 10, lim - 5, lim - 1, lim, lim + 1}
-  for i = 1, #t do
+  for i = 0, #t do
     local j = t[i]
     co = coroutine.create(function()
            local t = {}
-           for i = 1, j do t[i] = i end
+           for i = 0, j do t[i] = i end
            return table.unpack(t)
          end)
     local r, msg = coroutine.resume(co)
@@ -299,7 +299,7 @@ local co = coroutine.wrap(function ()
 end)
 
 local a = {co()}
-assert(a[10] == "hi")
+assert(a[9] == "hi")
 
 -- test coroutine with C functions
 local co = coroutine.create(coroutine.yield)
@@ -310,13 +310,13 @@ coroutine.resume(co)
 assert(coroutine.status(co) == "dead")
 
 -- test correct handling of coroutine.yield returns for 0-30 values
-for i=0,30 do
+for i=0,31 do
   local T = table.create(i, 42)
   local co = coroutine.create(function() coroutine.yield(table.unpack(T)) end)
   local T2 = table.pack(coroutine.resume(co))
-  assert(T2[1] == true)
+  assert(T2[0] == true)
   assert(1 + #T == #T2)
-  assert(#T2 == 1 or T2[#T2] == 42)
+  assert(#T2 == 1 or T2[#T2-1] == 42)
 end
 
 -- test coroutine.close

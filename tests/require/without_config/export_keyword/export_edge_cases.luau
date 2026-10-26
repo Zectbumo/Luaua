@@ -13,7 +13,7 @@ step = step + 1
 step = step + 1
 
 export local sum = 0
-for i = 1, 3 do
+for i = 1, 4 do
     sum += i
 end
 

@@ -219,10 +219,10 @@ end
 function _PRETTYPRINT(...)
     local args = table.pack(...)
     local strings = {}
-    for i=1, args.n do
+    for i=0, args.n do
         local item = args[i]
         local str = pptostring(item, customoptions)
-        if i == 1 then
+        if i == 0 then
             capturedoutput = capturedoutput .. str
         else
             capturedoutput = capturedoutput .. "\t" .. str

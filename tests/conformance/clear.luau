@@ -6,10 +6,10 @@ end
 
 function generateClearedTable(arraySize, hashSize)
 	local tb = {}
-	for i = 1, arraySize do
+	for i = 0, arraySize do
 		tb[i] = i
 	end
-	for i = 1, hashSize do
+	for i = 0, hashSize do
 		tb[tostring(i)] = i
 	end
 	table.clear(tb)
@@ -31,7 +31,7 @@ do
 	assert(next(generateClearedTable(10, 10)) == nil, "table hash part should be empty (had both)")
 
 	
-	for i = 1, 16 do
+	for i = 0, 16 do
 		local t1 = generateClearedTable(16, 0)
 		local t2 = table.create(16)
 		t1[i] = true
@@ -57,7 +57,7 @@ do
 
 	do -- Check expanding the array part after clear
 		local tb = generateClearedTable(10, 0)
-		for i = 1, 40 do
+		for i = 0, 40 do
 			tb[i] = i
 		end
 		assert(#tb == 40, "wrong array part size after expand")
@@ -65,7 +65,7 @@ do
 
 	do -- Check expanding the hash part after clear
 		local tb = generateClearedTable(0, 10)
-		for i = 1, 40 do
+		for i = 0, 40 do
 			tb[tostring(i)] = i
 		end
 		local count = 0

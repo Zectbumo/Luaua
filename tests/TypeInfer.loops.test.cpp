@@ -240,7 +240,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "for_in_with_just_one_iterator_is_ok")
     CheckResult result = check(R"(
         local function keys(dictionary)
             local new = {}
-            local index = 1
+            local index = 0
 
             for key in pairs(dictionary) do
                 new[index] = key
@@ -1060,13 +1060,13 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "dcr_iteration_fragmented_keys")
         end
 
         local function getTableLength(tbl)
-            local length = 1
+            local length = 0
             local value = rawget(tbl, length)
             while value ~= nil do
                 length += 1
                 value = rawget(tbl, length)
             end
-            return length - 1
+            return length
         end
 
         local function rawpairs(t)
@@ -1079,8 +1079,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "dcr_iteration_fragmented_keys")
             local tableLength = getTableLength(tbl)
             for key, _ in rawpairs(tbl) do
                 if not isIndexKey(key, tableLength) then
-                    keysLength = keysLength + 1
                     keys[keysLength] = key
+                    keysLength = keysLength + 1
                 end
             end
             return keys, keysLength, tableLength

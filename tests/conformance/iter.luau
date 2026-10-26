@@ -8,8 +8,8 @@ do
   for a,b in pairs{} do error("not here") end
   for i=1,0 do error("not here") end
   for i=0,1,-1 do error("not here") end
-  a = nil; for i=1,1 do assert(not a); a=1 end; assert(a)
-  a = nil; for i=1,1,-1 do assert(not a); a=1 end; assert(a)
+  a = nil; for i=1,2 do assert(not a); a=1 end; assert(a)
+  a = nil; for i=1,0,-1 do assert(not a); a=1 end; assert(a)
   a = 0; for i=0, 1, 0.1 do a=a+1 end; assert(a==11)
 end
 
@@ -18,8 +18,8 @@ do
   local a
   --a = 0; for i=1, 0, -0.01 do a=a+1 end; assert(a==101)
   a = 0; for i=0, 0.999999999, 0.1 do a=a+1 end; assert(a==10)
-  a = 0; for i=1, 1, 1 do a=a+1 end; assert(a==1)
-  a = 0; for i=1e10, 1e10, -1 do a=a+1 end; assert(a==1)
+  a = 0; for i=1, 1, 1 do a=a+1 end; assert(a==0)
+  a = 0; for i=1e10, 1e10, -1 do a=a+1 end; assert(a==0)
   a = 0; for i=1, 0.99999, 1 do a=a+1 end; assert(a==0)
   a = 0; for i=99999, 1e5, -1 do a=a+1 end; assert(a==0)
   a = 0; for i=1, 0.99999, -1 do a=a+1 end; assert(a==1)
@@ -36,7 +36,7 @@ testLoopWithCoercions()
 -- generic for with function iterators
 do
   local function f (n, p)
-    local t = {}; for i=1,p do t[i] = i*10 end
+    local t = {}; for i=0,p do t[i] = i*10 end
     return function (_,n)
              if n > 0 then
                n = n-1
@@ -48,7 +48,7 @@ do
   local x = 0
   for n,a,b,c,d in f(5,3) do
     x = x+1
-    assert(a == 10 and b == 20 and c == 30 and d == nil)
+    assert(a == 0 and b == 10 and c == 20 and d == nil)
   end
   assert(x == 5)
 end
@@ -116,7 +116,7 @@ do
   for n in f do
     x += n
   end
-  assert(x == 10)
+  assert(x == 6)
 end
 
 -- generic for with __iter (userdata)
@@ -131,7 +131,7 @@ do
   for n in f do
     x += n
   end
-  assert(x == 10)
+  assert(x == 6)
 end
 
 -- generic for with tables (dictionary)
@@ -183,7 +183,7 @@ do
   for k in {1, 2, 3, 4, 5} do
     x += k
   end
-  assert(x == 15)
+  assert(x == 10)
 end
 
 -- all extra variables should be set to nil during builtin traversal
@@ -193,7 +193,7 @@ do
     x += k
     assert(a == nil and b == nil and c == nil and d == nil and e == nil)
   end
-  assert(x == 15)
+  assert(x == 10)
 end
 
 -- yielding generalized iteration: basic iterator that yields
@@ -214,7 +214,7 @@ do
     return sum
   end)
 
-  for i = 1, 4 do
+  for i = 0, 4 do
     local ok, val = coroutine.resume(co)
     assert(ok and val == nil) -- yield produces no values
   end
@@ -231,10 +231,10 @@ do
       table.insert(keys, k)
     end
     table.sort(keys)
-    local i = 0
+    local i = -1
     return function()
       i += 1
-      if i > #keys then return nil end
+      if i >= #keys then return nil end
       coroutine.yield()
       return keys[i], t[keys[i]]
     end
@@ -248,7 +248,7 @@ do
     return result.a, result.b, result.c
   end)
 
-  for i = 1, 3 do
+  for i = 0, 3 do
     local ok = coroutine.resume(co)
     assert(ok)
   end
@@ -284,8 +284,8 @@ do
 
   -- 6 yields + 1 final return = 7 resumes
   assert(#yields == 7)
-  assert(yields[1] == "first" and yields[2] == "second")
-  assert(yields[7] == 6) -- final return value is the sum
+  assert(yields[0] == "first" and yields[1] == "second")
+  assert(yields[6] == 6) -- final return value is the sum
 end
 
 -- yielding generalized iteration: empty iteration (iterator returns nil immediately)
@@ -332,7 +332,7 @@ do
     return table.concat(result, ",")
   end)
 
-  for i = 1, 3 do
+  for i = 1, 4 do
     local ok, val = coroutine.resume(co)
     assert(ok and val == i)
   end
@@ -361,7 +361,7 @@ do
     return sum
   end)
 
-  for i = 1, 5 do
+  for i = 0, 5 do
     local ok = coroutine.resume(co)
     assert(ok)
   end
@@ -387,7 +387,7 @@ do
     return last
   end)
 
-  for i = 1, 3 do
+  for i = 0, 3 do
     local ok = coroutine.resume(co)
     assert(ok)
   end
@@ -435,7 +435,7 @@ do
     return sum
   end)
 
-  for i = 1, 4 do
+  for i = 1, 5 do
     local ok, val = coroutine.resume(co)
     assert(ok and val == i) -- yield passes index+1
   end
@@ -548,8 +548,8 @@ do
 
   -- 3 yields (index 0, 1, 2) + final return
   assert(#yields == 4)
-  assert(yields[1] == 0 and yields[2] == 1 and yields[3] == 2)
-  assert(yields[4] == 600) -- 100 + 200 + 300
+  assert(yields[0] == 0 and yields[1] == 1 and yields[2] == 2)
+  assert(yields[3] == 600) -- 100 + 200 + 300
 end
 
 -- yielding generalized iteration: check that C call limit is respected

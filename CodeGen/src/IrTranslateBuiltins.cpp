@@ -882,7 +882,7 @@ static BuiltinImplResult translateBuiltinTableInsert(IrBuilder& build, int npara
     IrOp table = build.inst(IrCmd::LOAD_POINTER, build.vmReg(arg));
     build.inst(IrCmd::CHECK_READONLY, table, build.vmExit(pcpos));
 
-    IrOp pos = build.inst(IrCmd::ADD_INT, build.inst(IrCmd::TABLE_LEN, table), build.constInt(1));
+    IrOp pos = build.inst(IrCmd::TABLE_LEN, table);
 
     IrOp setnum = build.inst(IrCmd::TABLE_SETNUM, table, pos);
 

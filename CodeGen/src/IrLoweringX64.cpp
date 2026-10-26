@@ -1836,13 +1836,13 @@ void IrLoweringX64::lowerInst(IrInst& inst, uint32_t index, const IrBlock& next)
         // step > 0
         jumpOnNumberCmp(build, tmp3.reg, memRegDoubleOp(OP_C(inst)), build.f64(0.0), IrCondition::Greater, direct, /* floatPrecision */ false);
 
-        // !(limit <= index)
-        jumpOnNumberCmp(build, noreg, limit, index, IrCondition::NotLessEqual, labelOp(OP_E(inst)), /* floatPrecision */ false);
+        // !(limit < index)
+        jumpOnNumberCmp(build, noreg, limit, index, IrCondition::NotLess, labelOp(OP_E(inst)), /* floatPrecision */ false);
         build.jmp(labelOp(OP_D(inst)));
 
-        // !(index <= limit)
+        // !(index < limit)
         build.setLabel(direct);
-        jumpOnNumberCmp(build, noreg, index, limit, IrCondition::NotLessEqual, labelOp(OP_E(inst)), /* floatPrecision */ false);
+        jumpOnNumberCmp(build, noreg, index, limit, IrCondition::NotLess, labelOp(OP_E(inst)), /* floatPrecision */ false);
         jumpOrFallthrough(blockOp(OP_D(inst)), next);
         break;
     }

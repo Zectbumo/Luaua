@@ -2510,7 +2510,7 @@ struct Compiler
             recordSize += (item.kind == AstExprTable::Item::Kind::Record);
         }
 
-        // Optimization: allocate sequential explicitly specified numeric indices ([1]) as arrays
+        // Optimization: allocate sequential explicitly specified numeric indices ([0]) as arrays
         if (arraySize == 0 && hashSize > 0)
         {
             for (size_t i = 0; i < expr->items.size; ++i)
@@ -2520,7 +2520,7 @@ struct Compiler
 
                 const Constant* ckey = constants.find(item.key);
 
-                indexSize += (ckey && ckey->type == Constant::Type_Number && ckey->valueNumber == double(indexSize + 1));
+                indexSize += (ckey && ckey->type == Constant::Type_Number && ckey->valueNumber == double(indexSize));
             }
 
             // we only perform the optimization if we don't have any other []-keys
@@ -2629,6 +2629,7 @@ struct Compiler
         uint8_t arrayChunkReg = allocReg(expr, arrayChunkSize);
         unsigned int arrayChunkCurrent = 0;
 
+        // SETLIST preserves index + 1 in the bytecode so 0 remains available as an internal sentinel.
         unsigned int arrayIndex = 1;
         bool multRet = false;
 
@@ -2793,9 +2794,9 @@ struct Compiler
 
         Constant cv = getConstant(expr->index);
 
-        if (cv.type == Constant::Type_Number && cv.valueNumber >= 1 && cv.valueNumber <= 256 && double(int(cv.valueNumber)) == cv.valueNumber)
+        if (cv.type == Constant::Type_Number && cv.valueNumber >= 0 && cv.valueNumber <= 255 && double(int(cv.valueNumber)) == cv.valueNumber)
         {
-            uint8_t i = uint8_t(int(cv.valueNumber) - 1);
+            uint8_t i = uint8_t(int(cv.valueNumber));
 
             uint8_t rt = compileExprAuto(expr->expr, rs);
 
@@ -3240,7 +3241,7 @@ struct Compiler
         uint8_t reg; // register for local (Local) or table (Index*)
         uint8_t upval;
         uint8_t index;  // register for index in IndexExpr
-        uint8_t number; // index-1 (0-255) in IndexNumber
+        uint8_t number; // direct index (0-255) in IndexNumber
         BytecodeBuilder::StringRef name;
         Location location;
     };
@@ -3249,11 +3250,11 @@ struct Compiler
     {
         Constant cv = getConstant(index);
 
-        if (cv.type == Constant::Type_Number && cv.valueNumber >= 1 && cv.valueNumber <= 256 && double(int(cv.valueNumber)) == cv.valueNumber)
+        if (cv.type == Constant::Type_Number && cv.valueNumber >= 0 && cv.valueNumber <= 255 && double(int(cv.valueNumber)) == cv.valueNumber)
         {
             LValue result = {LValue::Kind_IndexNumber};
             result.reg = reg;
-            result.number = uint8_t(int(cv.valueNumber) - 1);
+            result.number = uint8_t(int(cv.valueNumber));
             result.location = index->location;
 
             return result;

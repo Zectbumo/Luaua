@@ -487,8 +487,12 @@ Constant foldBuiltin(AstNameTable& stringTable, int bfid, const Constant* args, 
         {
             int i = int(args[1].valueNumber);
 
-            if (i > 0 && unsigned(i) <= args[0].stringLength)
-                return cnum(double(uint8_t(args[0].valueString[i - 1])));
+            // Relative string position: negative means back from end.
+            if (i < 0)
+                i += int(args[0].stringLength);
+
+            if (i >= 0 && unsigned(i) < args[0].stringLength)
+                return cnum(double(uint8_t(args[0].valueString[i])));
         }
         break;
 
@@ -542,22 +546,22 @@ Constant foldBuiltin(AstNameTable& stringTable, int bfid, const Constant* args, 
 
             // Relative string position: negative means back from end
             if (start < 0)
-                start += int(len) + 1;
+                start += int(len);
             if (end < 0)
-                end += int(len) + 1;
+                end += int(len);
 
             // If end is before the start of the string, substring is empty
-            if (end < 1)
+            if (end <= 0)
                 return cstring("");
 
             // Start clamped to the start of the string, end is clamped to the end
-            start = start < 1 ? 1 : start;
+            start = start < 0 ? 0 : start;
             end = end > int(len) ? int(len) : end;
 
-            if (start <= end)
+            if (start < end)
             {
-                AstName name = stringTable.getOrAdd(str + (start - 1), end - start + 1);
-                return cstring(name.value, end - start + 1);
+                AstName name = stringTable.getOrAdd(str + start, end - start);
+                return cstring(name.value, end - start);
             }
 
             return cstring("");

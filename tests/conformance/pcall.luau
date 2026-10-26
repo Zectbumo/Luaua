@@ -4,7 +4,7 @@ print("testing pcall")
 function checkresults(e, ...)
 	local t = table.pack(...)
 	assert(t.n == #e)
-	for i=1,t.n do
+	for i=0,t.n do
 		assert(t[i] == e[i])
 	end
 end
@@ -12,8 +12,8 @@ end
 function checkerror(...)
 	local t = table.pack(...)
 	assert(t.n == 2)
-	assert(t[1] == false)
-	assert(type(t[2]) == "string")
+	assert(t[0] == false)
+	assert(type(t[1]) == "string")
 end
 
 function corun(f)
@@ -31,12 +31,12 @@ function colog(f)
 	local res = {}
 	while coroutine.status(co) == "suspended" do
 		local run = {coroutine.resume(co)}
-		if run[1] then
+		if run[0] then
 			table.insert(res, coroutine.status(co) == "suspended" and "yield" or "return");
 		else
 			table.insert(res, "error");
 		end
-		table.move(run, 2, #run, 1 + #res, res) -- equivalent to table.append(res, run)
+		table.move(run, 1, #run, #res, res) -- equivalent to table.append(res, run)
 		print(coroutine.status(co), table.unpack(res))
 	end
 	assert(coroutine.status(co) == "dead")
@@ -70,7 +70,7 @@ end
 checkresults({ "yield", "return", true, 42 }, colog(function() return pcall(function() coroutine.yield() return 42 end) end))
 checkresults({ "yield", 1, "return", true, 42 }, colog(function() return pcall(function() coroutine.yield(1) return 42 end) end))
 checkresults({ "yield", 1, 2, 3, "return", true, 42 }, colog(function() return pcall(function() coroutine.yield(1, 2, 3) return 42 end) end))
-checkresults({ "yield", 1, "yield", 2, "yield", 3, "return", true, 42 }, colog(function() return pcall(function() for i=1,3 do coroutine.yield(i) end return 42 end) end))
+checkresults({ "yield", 1, "yield", 2, "yield", 3, "return", true, 42 }, colog(function() return pcall(function() for i=1,4 do coroutine.yield(i) end return 42 end) end))
 checkresults({ "yield", "return", true, 1, 2, 3}, colog(function() return pcall(function() coroutine.yield() return 1, 2, 3 end) end))
 
 -- recursive yield tests
@@ -83,10 +83,10 @@ checkresults({ "yield", "yield", "return", false, "pcall.luau:82: bar" }, colog(
 
 -- returning lots of results (past MINSTACK limits)
 local res = {pcall(function() return table.unpack(table.create(100, 'a')) end)}
-assert(#res == 101 and res[1] == true and res[2] == 'a' and res[101] == 'a')
+assert(#res == 101 and res[0] == true and res[1] == 'a' and res[100] == 'a')
 
 local res = {corun(function() return pcall(function() coroutine.yield() return table.unpack(table.create(100, 'a')) end) end)}
-assert(#res == 102 and res[1] == true and res[2] == true and res[3] == 'a' and res[102] == 'a')
+assert(#res == 102 and res[0] == true and res[1] == true and res[2] == 'a' and res[101] == 'a')
 
 -- pcall a C function after yield; resume gets multiple C entries this way
 checkresults({ "yield", 1, 2, 3, "return", true }, colog(function() return pcall(coroutine.yield, 1, 2, 3) end))

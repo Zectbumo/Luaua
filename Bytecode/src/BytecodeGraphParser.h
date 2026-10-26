@@ -686,14 +686,14 @@ struct BytecodeGraphParser
 
             case LOP_GETTABLEN:
                 addVmRegInput(node, LUAU_INSN_B(insn));
-                addImmInput(node, static_cast<int32_t>(LUAU_INSN_C(insn) + 1));
+                addImmInput(node, static_cast<int32_t>(LUAU_INSN_C(insn)));
                 addProducer(LUAU_INSN_A(insn), nodeOp);
                 break;
 
             case LOP_SETTABLEN:
                 addVmRegInput(node, LUAU_INSN_A(insn));
                 addVmRegInput(node, LUAU_INSN_B(insn));
-                addImmInput(node, static_cast<int32_t>(LUAU_INSN_C(insn) + 1));
+                addImmInput(node, static_cast<int32_t>(LUAU_INSN_C(insn)));
                 break;
 
             case LOP_NEWCLOSURE:

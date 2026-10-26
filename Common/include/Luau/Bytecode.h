@@ -31,8 +31,8 @@
 // Jumps: -2^23..2^23. Jump offsets are specified in word increments, so jumping over an instruction may sometimes require an offset of 2 or more. Note that for jump instructions with AUX, the AUX word is included as part of the jump offset.
 
 // # Bytecode versions
-// Bytecode serialized format embeds a version number, that dictates both the serialized form as well as the allowed instructions. As long as the bytecode version falls into supported
-// range (indicated by LBC_BYTECODE_MIN / LBC_BYTECODE_MAX) and was produced by Luau compiler, it should load and execute correctly.
+// Bytecode serialized format starts with a Luaua dialect marker followed by a version number, which dictates both the serialized form as well as the allowed instructions. As long as the
+// bytecode version falls into supported range (indicated by LBC_BYTECODE_MIN / LBC_BYTECODE_MAX) and was produced by the Luaua compiler, it should load and execute correctly.
 //
 // Note that Luau runtime doesn't provide indefinite bytecode compatibility: support for older versions gets removed over time. As such, bytecode isn't a durable storage format and it's expected
 // that Luau users can recompile bytecode from source on Luau version upgrades if necessary.
@@ -158,13 +158,13 @@ enum LuauOpcode
     // GETTABLEN: load value from table into target register using small integer index as a key
     // A: target register
     // B: table register
-    // C: index-1 (index is 1..256)
+    // C: index (0..255)
     LOP_GETTABLEN,
 
     // SETTABLEN: store source register into table using small integer index as a key
     // A: source register
     // B: table register
-    // C: index-1 (index is 1..256)
+    // C: index (0..255)
     LOP_SETTABLEN,
 
     // NEWCLOSURE: create closure from a child proto; followed by a CAPTURE instruction for each upvalue
@@ -285,13 +285,13 @@ enum LuauOpcode
     // A: target register
     // B: source register start
     // C: value count + 1, or 0 to use all values up to top (MULTRET)
-    // AUX: table index to start from
+    // AUX: table index + 1 to start from (the encoded form preserves 0 as an internal sentinel)
     LOP_SETLIST,
 
     // FORNPREP: prepare a numeric for loop, jump over the loop if first iteration doesn't need to run
     // A: target register; numeric for loops assume a register layout [limit, step, index, variable]
     // D: jump offset (-32768..32767)
-    // limit/step are immutable, index isn't visible to user code since it's copied into variable
+    // limit is exclusive; limit/step are immutable, index isn't visible to user code since it's copied into variable
     LOP_FORNPREP,
 
     // FORNLOOP: adjust loop variables for one iteration, jump back to the loop header if loop needs to continue
@@ -510,6 +510,8 @@ enum LuauOpcode
 // Bytecode tags, used internally for bytecode encoded as a string
 enum LuauBytecodeTag
 {
+    // Successful Luaua bytecode starts with this marker, followed by the bytecode version; error blobs continue to start with 0
+    LBC_BYTECODE_MARKER = 0x80,
     // Bytecode version; runtime supports [MIN, MAX], compiler emits TARGET by default but may emit a higher version when flags are enabled
     LBC_VERSION_MIN = 3,
     LBC_VERSION_MAX = 13,

@@ -14,6 +14,7 @@ namespace Compile
 
 uint64_t modelCost(AstNode* root, AstLocal* const* vars, size_t varCount);
 int computeCost(uint64_t model, const bool* varsConst, size_t varCount);
+int getTripCount(double from, double to, double step);
 
 } // namespace Compile
 } // namespace Luau
@@ -69,7 +70,7 @@ TEST_CASE("LoopAssign")
 {
     uint64_t model = modelFunction(R"(
 function test(a)
-    for i=1,3 do
+    for i=0,3 do
         a[i] = i
     end
 end
@@ -183,7 +184,7 @@ TEST_CASE("TableAssign")
 {
     uint64_t model = modelFunction(R"(
 function test(a)
-    for i=1,#a do
+    for i=0,#a do
         a[i] = i
     end
 end
@@ -209,6 +210,15 @@ end
 
     CHECK_EQ(3, Luau::Compile::computeCost(model, args1, 1));
     CHECK_EQ(3, Luau::Compile::computeCost(model, args2, 1));
+}
+
+TEST_CASE("ExclusiveTripCount")
+{
+    CHECK_EQ(0, Luau::Compile::getTripCount(0, 0, 1));
+    CHECK_EQ(3, Luau::Compile::getTripCount(0, 5, 2));
+    CHECK_EQ(3, Luau::Compile::getTripCount(5, 0, -2));
+    CHECK_EQ(1, Luau::Compile::getTripCount(0, 1, 2));
+    CHECK_EQ(-1, Luau::Compile::getTripCount(-2147483647.0, 2147483647.0, 1));
 }
 
 TEST_CASE("MultipleAssignments")

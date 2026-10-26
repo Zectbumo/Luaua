@@ -145,12 +145,12 @@ until i > 1000
 f = f .. "}"
 assert(loadstring(f))()
 
-assert(eq(a[300][1], math.sin(300)))
-assert(eq(a[600][1], math.sin(600)))
-assert(eq(a[500][2], math.cos(500)))
-assert(eq(a[800][2], math.cos(800)))
-assert(eq(a[200][3], 200/3))
-assert(eq(a[1000][3], 1000/3, 0.001))
+assert(eq(a[299][0], math.sin(300)))
+assert(eq(a[599][0], math.sin(600)))
+assert(eq(a[499][1], math.cos(500)))
+assert(eq(a[799][1], math.cos(800)))
+assert(eq(a[199][2], 200/3))
+assert(eq(a[999][2], 1000/3, 0.001))
 print('+')
 
 do   -- testing NaN
@@ -255,7 +255,7 @@ until flag or i>10000
 assert(-10 <= Min and Max<=0)
 assert(flag);
 
-assert(select(2, pcall(math.random, 1, 2, 3)):match("wrong number of arguments"))
+assert(select(1, pcall(math.random, 1, 2, 3)):match("wrong number of arguments"))
 
 -- argument count
 function nothing() end
@@ -473,10 +473,10 @@ assert(select('#', math.modf(1.5)) == 2)
 assert(select('#', math.frexp(1.5)) == 2)
 
 -- test that fastcalls that return variadic results return them correctly in variadic position
-assert(select(1, math.modf(1.5)) == 1)
-assert(select(2, math.modf(1.5)) == 0.5)
-assert(select(1, math.frexp(1.5)) == 0.75)
-assert(select(2, math.frexp(1.5)) == 1)
+assert(select(0, math.modf(1.5)) == 1)
+assert(select(1, math.modf(1.5)) == 0.5)
+assert(select(0, math.frexp(1.5)) == 0.75)
+assert(select(1, math.frexp(1.5)) == 1)
 
 -- most of the tests above go through fastcall path
 -- to make sure the basic implementations are also correct we test these functions with string->number coercions

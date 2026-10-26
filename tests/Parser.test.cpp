@@ -1325,10 +1325,10 @@ function BottomUpTree(item, depth)
 end
 
 function ItemCheck(tree)
-  if tree[2] then
-    return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3])
+  if tree[1] then
+    return tree[0] + ItemCheck(tree[1]) - ItemCheck(tree[2])
   else
-    return tree[1]
+    return tree[0]
   end
 end
         )");
@@ -1348,7 +1348,7 @@ TEST_CASE_FIXTURE(Fixture, "parse_nesting_based_end_detection_single_line")
     {
         parse(R"(-- i am line 1
 function ItemCheck(tree)
-  if tree[2] then return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3]) else return tree[1]
+  if tree[1] then return tree[0] + ItemCheck(tree[1]) - ItemCheck(tree[2]) else return tree[0]
 end
 
 function BottomUpTree(item, depth)
@@ -1411,10 +1411,10 @@ local function BottomUpTree(item, depth)
 end
 
 local function ItemCheck(tree)
-  if tree[2] then
-    return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3])
+  if tree[1] then
+    return tree[0] + ItemCheck(tree[1]) - ItemCheck(tree[2])
   else
-    return tree[1]
+    return tree[0]
   end
 end
         )");
@@ -1434,10 +1434,10 @@ TEST_CASE_FIXTURE(Fixture, "parse_nesting_based_end_detection_failsafe_earlier")
     {
         parse(R"(-- i am line 1
 local function ItemCheck(tree)
-  if tree[2] then
-    return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3])
+  if tree[1] then
+    return tree[0] + ItemCheck(tree[1]) - ItemCheck(tree[2])
   else
-    return tree[1]
+    return tree[0]
       end
 end
 
@@ -1475,11 +1475,11 @@ function stringifyTable(t)
         k = tostring(k)
 
         -- add another entry to our stringified table
-        entries[#entries + 1] = ("s = s"):format(k, v)
+        entries[#entries] = ("s = s"):format(k, v)
     end
 
     -- the memory location of the table
-    local id = tostring(t):sub(8)
+    local id = tostring(t):sub(7)
 
     return ("{s}@s"):format(table.concat(entries, ", "), id)
 end

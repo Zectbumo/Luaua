@@ -11,7 +11,7 @@ end
 
 
 function checkmessage (prog, msg)
-  -- assert(string.find(doit(prog), msg, 1, true))
+  -- assert(string.find(doit(prog), msg, 0, true))
 end
 
 function checksyntax (prog, extra, token, line)
@@ -19,7 +19,7 @@ function checksyntax (prog, extra, token, line)
   token = string.gsub(token, "(%p)", "%%%1")
   local pt = string.format([[^%%[string ".*"%%]:]]) -- only check that an error happened - ignore token/line since Luau error messages differ from Lua substantially
   assert(string.find(msg, pt))
-  assert(string.find(msg, msg, 1, true))
+  assert(string.find(msg, msg, 0, true))
 end
 
 
@@ -31,7 +31,7 @@ assert(doit("error('hi', 0)") == 'hi')
 
 
 -- test common errors/errors that crashed in the past
-assert(doit("unpack({}, 1, n=2^30)"))
+assert(doit("unpack({}, 0, n=2^30)"))
 assert(doit("a=math.sin()"))
 assert(not doit("tostring(1)") and doit("tostring()"))
 assert(doit("tonumber()"))
@@ -396,7 +396,8 @@ assert(not a and b:match('[^ ]+') == "thisisaverylongstringitssolongthatitwontfi
 function ecall(fn, ...)
   local ok, err = pcall(fn, ...)
   assert(not ok)
-  return err:sub((err:find(": ") or -1) + 2, #err)
+  local _, message = err:find(": ")
+  return err:sub(message or 0, #err)
 end
 
 -- arith errors

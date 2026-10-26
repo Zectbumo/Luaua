@@ -19,7 +19,7 @@ static int foreachi(lua_State* L)
     luaL_checktype(L, 2, LUA_TFUNCTION);
     int i;
     int n = lua_objlen(L, 1);
-    for (i = 1; i <= n; i++)
+    for (i = 0; i < n; i++)
     {
         lua_pushvalue(L, 2);   // function
         lua_pushinteger(L, i); // 1st argument
@@ -53,6 +53,7 @@ static int foreach (lua_State* L)
 static int maxn(lua_State* L)
 {
     double max = 0;
+    bool found = false;
     luaL_checktype(L, 1, LUA_TTABLE);
 
     LuaTable* t = hvalue(L->base);
@@ -60,7 +61,10 @@ static int maxn(lua_State* L)
     for (int i = 0; i < t->sizearray; i++)
     {
         if (!ttisnil(&t->array[i]))
-            max = i + 1;
+        {
+            max = i;
+            found = true;
+        }
     }
 
     for (int i = 0; i < sizenode(t); i++)
@@ -71,12 +75,18 @@ static int maxn(lua_State* L)
         {
             double v = nvalue(gkey(n));
 
-            if (v > max)
+            if (!found || v > max)
+            {
                 max = v;
+                found = true;
+            }
         }
     }
 
-    lua_pushnumber(L, max);
+    if (found)
+        lua_pushnumber(L, max);
+    else
+        lua_pushnil(L);
     return 1;
 }
 
@@ -97,13 +107,13 @@ static bool shouldsparsemove(LuaTable* src, LuaTable* dst, int n)
     return n > minsparsemoveelems && n / 2 > maxelems;
 }
 
-static bool tovalidintkey(lua_State* L, int idx, int f, int e, int* result)
+static bool tovalidintkey(lua_State* L, int idx, double f, double e, int* result)
 {
     if (lua_type(L, idx) == LUA_TNUMBER)
     {
         double nkey = lua_tonumber(L, idx);
 
-        if (nkey >= f && nkey <= e)
+        if (nkey >= f && nkey < e && nkey >= INT_MIN && nkey <= INT_MAX)
         {
             luai_num2int(*result, nkey);
             return luai_numeq(cast_num(*result), nkey);
@@ -121,20 +131,20 @@ static void moveelements(lua_State* L, int srct, int dstt, int f, int e, int t, 
     if (dst->readonly)
         luaG_readonlyerror(L);
 
-    int n = e - f + 1; // number of elements to move
+    int n = e - f; // number of elements to move
 
-    if (unsigned(f) - 1 < unsigned(src->sizearray) && unsigned(t) - 1 < unsigned(dst->sizearray) &&
-        unsigned(f) - 1 + unsigned(n) <= unsigned(src->sizearray) && unsigned(t) - 1 + unsigned(n) <= unsigned(dst->sizearray))
+    if (unsigned(f) < unsigned(src->sizearray) && unsigned(t) < unsigned(dst->sizearray) && unsigned(f) + unsigned(n) <= unsigned(src->sizearray) &&
+        unsigned(t) + unsigned(n) <= unsigned(dst->sizearray))
     {
         TValue* srcarray = src->array;
         TValue* dstarray = dst->array;
 
-        if (t > e || t <= f || (dstt != srct && dst != src))
+        if (t >= e || t <= f || (dstt != srct && dst != src))
         {
             for (int i = 0; i < n; ++i)
             {
-                TValue* s = &srcarray[f + i - 1];
-                TValue* d = &dstarray[t + i - 1];
+                TValue* s = &srcarray[f + i];
+                TValue* d = &dstarray[t + i];
                 setobj2t(L, d, s);
             }
         }
@@ -142,8 +152,8 @@ static void moveelements(lua_State* L, int srct, int dstt, int f, int e, int t, 
         {
             for (int i = n - 1; i >= 0; i--)
             {
-                TValue* s = &srcarray[(f + i) - 1];
-                TValue* d = &dstarray[(t + i) - 1];
+                TValue* s = &srcarray[f + i];
+                TValue* d = &dstarray[t + i];
                 setobj2t(L, d, s);
             }
         }
@@ -155,7 +165,7 @@ static void moveelements(lua_State* L, int srct, int dstt, int f, int e, int t, 
         int srcta = lua_absindex(L, srct);
         int dstta = lua_absindex(L, dstt);
 
-        int te = t + (n - 1);
+        double te = double(t) + n;
 
         // temporary table to hold elements from source that are being moved
         lua_newtable(L);
@@ -197,7 +207,7 @@ static void moveelements(lua_State* L, int srct, int dstt, int f, int e, int t, 
     }
     else
     {
-        if (t > e || t <= f || dst != src)
+        if (t >= e || t <= f || dst != src)
         {
             for (int i = 0; i < n; ++i)
             {
@@ -224,8 +234,8 @@ static int tinsert(lua_State* L)
     switch (lua_gettop(L))
     {
     case 2:
-    {                // called with only 2 arguments
-        pos = n + 1; // insert new element at the end
+    {            // called with only 2 arguments
+        pos = n; // insert new element at the end
         break;
     }
     case 3:
@@ -233,7 +243,7 @@ static int tinsert(lua_State* L)
         pos = luaL_checkinteger(L, 2); // 2nd argument is the position
 
         // move up elements if necessary
-        if (1 <= pos && pos <= n)
+        if (0 <= pos && pos < n)
             moveelements(L, 1, 1, pos, n, pos + 1, /* sparsemove */ false);
         break;
     }
@@ -250,21 +260,21 @@ static int tremove(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
     int n = lua_objlen(L, 1);
-    int pos = luaL_optinteger(L, 2, n);
+    int pos = luaL_optinteger(L, 2, n - 1);
 
-    if (!(1 <= pos && pos <= n)) // position is outside bounds?
-        return 0;                // nothing to remove
-    lua_rawgeti(L, 1, pos);      // result = t[pos]
+    if (!(0 <= pos && pos < n)) // position is outside bounds?
+        return 0;               // nothing to remove
+    lua_rawgeti(L, 1, pos);     // result = t[pos]
 
     moveelements(L, 1, 1, pos + 1, n, pos, /* sparsemove */ false);
 
     lua_pushnil(L);
-    lua_rawseti(L, 1, n); // t[n] = nil
+    lua_rawseti(L, 1, n - 1); // t[n - 1] = nil
     return 1;
 }
 
 /*
-** Copy elements (1[f], ..., 1[e]) into (tt[t], tt[t+1], ...). Whenever
+** Copy elements 1[f, e) into tt[t, t + (e - f)). Whenever
 ** possible, copy in increasing order, which is better for rehashing.
 ** "possible" means destination after original range, or smaller
 ** than origin, or copying to another table.
@@ -278,10 +288,10 @@ static int tmove(lua_State* L)
     int tt = !lua_isnoneornil(L, 5) ? 5 : 1; // destination table
     luaL_checktype(L, tt, LUA_TTABLE);
 
-    if (e >= f)
+    if (e > f)
     { // otherwise, nothing to move
-        luaL_argcheck(L, f > 0 || e < INT_MAX + f, 3, "too many elements to move");
-        int n = e - f + 1; // number of elements to move
+        luaL_argcheck(L, f >= 0 || e <= INT_MAX + f, 3, "too many elements to move");
+        int n = e - f; // number of elements to move
         luaL_argcheck(L, t <= INT_MAX - n + 1, 4, "destination wrap around");
 
         LuaTable* dst = hvalue(L->base + (tt - 1));
@@ -291,9 +301,9 @@ static int tmove(lua_State* L)
 
         bool sparsemove = DFFlag::LuauTableMoveTimeoutFix && shouldsparsemove(hvalue(L->base), dst, n);
 
-        if (t > 0 && (t - 1) <= dst->sizearray && (t - 1 + n) > dst->sizearray)
+        if (!sparsemove && t >= 0 && t <= dst->sizearray && n <= INT_MAX - t && t + n > dst->sizearray)
         { // grow the destination table array
-            luaH_resizearray(L, dst, t - 1 + n);
+            luaH_resizearray(L, dst, t + n);
         }
 
         moveelements(L, 1, tt, f, e, t, sparsemove);
@@ -304,9 +314,9 @@ static int tmove(lua_State* L)
 
 static void addfield(lua_State* L, luaL_Strbuf* b, int i, LuaTable* t)
 {
-    if (t && unsigned(i - 1) < unsigned(t->sizearray) && ttisstring(&t->array[i - 1]))
+    if (t && unsigned(i) < unsigned(t->sizearray) && ttisstring(&t->array[i]))
     {
-        TString* ts = tsvalue(&t->array[i - 1]);
+        TString* ts = tsvalue(&t->array[i]);
         luaL_addlstring(b, getstr(ts), ts->len);
     }
     else
@@ -323,21 +333,20 @@ static int tconcat(lua_State* L)
     size_t lsep;
     const char* sep = luaL_optlstring(L, 2, "", &lsep);
     luaL_checktype(L, 1, LUA_TTABLE);
-    int i = luaL_optinteger(L, 3, 1);
+    int i = luaL_optinteger(L, 3, 0);
     int last = luaL_opt(L, luaL_checkinteger, 4, lua_objlen(L, 1));
 
     LuaTable* t = hvalue(L->base);
 
     luaL_Strbuf b;
     luaL_buffinit(L, &b);
+    int first = i;
     for (; i < last; i++)
     {
-        addfield(L, &b, i, t);
-        if (lsep != 0)
+        if (i != first && lsep != 0)
             luaL_addlstring(&b, sep, lsep);
-    }
-    if (i == last) // add last value (if interval was not empty)
         addfield(L, &b, i, t);
+    }
     luaL_pushresult(&b);
     return 1;
 }
@@ -367,16 +376,16 @@ static int tunpack(lua_State* L)
     luaL_checktype(L, 1, LUA_TTABLE);
     LuaTable* t = hvalue(L->base);
 
-    int i = luaL_optinteger(L, 2, 1);
+    int i = luaL_optinteger(L, 2, 0);
     int e = luaL_opt(L, luaL_checkinteger, 3, lua_objlen(L, 1));
-    if (i > e)
-        return 0;                 // empty range
-    unsigned n = (unsigned)e - i; // number of elements minus 1 (avoid overflows)
-    if (n >= (unsigned int)INT_MAX || !lua_checkstack(L, (int)(++n)))
+    if (i >= e)
+        return 0;                           // empty range
+    unsigned n = (unsigned)e - (unsigned)i; // number of elements (avoid overflows)
+    if (n >= (unsigned int)INT_MAX || !lua_checkstack(L, (int)n))
         luaL_error(L, "too many results to unpack");
 
     // fast-path: direct array-to-stack copy
-    if (i == 1 && int(n) <= t->sizearray)
+    if (i == 0 && int(n) <= t->sizearray)
     {
         for (i = 0; i < int(n); i++)
             setobj2s(L, L->top + i, &t->array[i]);
@@ -384,10 +393,9 @@ static int tunpack(lua_State* L)
     }
     else
     {
-        // push arg[i..e - 1] (to avoid overflows)
+        // push arg[i..e) (to avoid overflows)
         for (; i < e; i++)
             lua_rawgeti(L, 1, i);
-        lua_rawgeti(L, 1, e); // push last element
     }
     return (int)n;
 }
@@ -599,8 +607,8 @@ static int tfind(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTABLE);
     luaL_checkany(L, 2);
-    int init = luaL_optinteger(L, 3, 1);
-    if (init < 1)
+    int init = luaL_optinteger(L, 3, 0);
+    if (init < 0)
         luaL_argerror(L, 3, "index out of range");
 
     LuaTable* t = hvalue(L->base);

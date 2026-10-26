@@ -1323,12 +1323,12 @@ void translateInstForNPrep(IrBuilder& build, const Instruction* pc, int pcpos)
     {
         double stepN = build.function.doubleOp(stepK);
 
-        // Condition to start the loop: step > 0 ? idx <= limit : limit <= idx
+        // Condition to start the loop: step > 0 ? idx < limit : limit < idx
         // We invert the condition so that loopStart is the fallthrough (false) label
         if (stepN > 0)
-            build.inst(IrCmd::JUMP_CMP_NUM, idx, limit, build.cond(IrCondition::NotLessEqual), loopExit, loopStart);
+            build.inst(IrCmd::JUMP_CMP_NUM, idx, limit, build.cond(IrCondition::NotLess), loopExit, loopStart);
         else
-            build.inst(IrCmd::JUMP_CMP_NUM, limit, idx, build.cond(IrCondition::NotLessEqual), loopExit, loopStart);
+            build.inst(IrCmd::JUMP_CMP_NUM, limit, idx, build.cond(IrCondition::NotLess), loopExit, loopStart);
     }
 
     // Fallthrough in original bytecode is implicit, so we start next internal block here
@@ -1381,11 +1381,11 @@ void translateInstForNLoop(IrBuilder& build, const Instruction* pc, int pcpos)
         // Constant step optimization removes all the uses of the step register, but it has potential uses if a VM exit is taken
         build.inst(IrCmd::MARK_USED, build.vmReg(ra + 1), build.constInt(1));
 
-        // Condition to continue the loop: step > 0 ? idx <= limit : limit <= idx
+        // Condition to continue the loop: step > 0 ? idx < limit : limit < idx
         if (stepN > 0)
-            build.inst(IrCmd::JUMP_CMP_NUM, idx, limit, build.cond(IrCondition::LessEqual), loopRepeat, loopExit);
+            build.inst(IrCmd::JUMP_CMP_NUM, idx, limit, build.cond(IrCondition::Less), loopRepeat, loopExit);
         else
-            build.inst(IrCmd::JUMP_CMP_NUM, limit, idx, build.cond(IrCondition::LessEqual), loopRepeat, loopExit);
+            build.inst(IrCmd::JUMP_CMP_NUM, limit, idx, build.cond(IrCondition::Less), loopRepeat, loopExit);
     }
 
     // Fallthrough in original bytecode is implicit, so we start next internal block here
@@ -1438,7 +1438,7 @@ void translateInstForGPrepInext(IrBuilder& build, const Instruction* pc, int pcp
     build.inst(IrCmd::CHECK_TAG, tagC, build.constTag(LUA_TNUMBER), fallback);
 
     IrOp numC = build.inst(IrCmd::LOAD_DOUBLE, build.vmReg(ra + 2));
-    build.inst(IrCmd::JUMP_CMP_NUM, numC, build.constDouble(0.0), build.cond(IrCondition::NotEqual), fallback, finish);
+    build.inst(IrCmd::JUMP_CMP_NUM, numC, build.constDouble(-1.0), build.cond(IrCondition::NotEqual), fallback, finish);
 
     build.beginBlock(finish);
 
@@ -1495,8 +1495,8 @@ void translateInstForGLoopIpairs(IrBuilder& build, const Instruction* pc, int pc
     build.inst(IrCmd::STORE_INT, build.vmReg(ra + 2), nextIndex);
     // Tag should already be set to lightuserdata
 
-    // setnvalue(ra + 3, double(index + 1));
-    build.inst(IrCmd::STORE_DOUBLE, build.vmReg(ra + 3), build.inst(IrCmd::INT_TO_NUM, nextIndex));
+    // The iterator cursor is encoded as index + 1, but the Lua-visible key is index.
+    build.inst(IrCmd::STORE_DOUBLE, build.vmReg(ra + 3), build.inst(IrCmd::INT_TO_NUM, index));
     build.inst(IrCmd::STORE_TAG, build.vmReg(ra + 3), build.constTag(LUA_TNUMBER));
 
     // setobj2s(L, ra + 4, e);
@@ -1525,7 +1525,7 @@ void translateInstGetTableN(IrBuilder& build, const Instruction* pc, int pcpos)
     if (isUserdataBytecodeType(bcTypes.a))
     {
         build.inst(IrCmd::SET_SAVEDPC, build.constUint(pcpos + 1));
-        build.inst(IrCmd::GET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c + 1));
+        build.inst(IrCmd::GET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c));
         return;
     }
 
@@ -1548,7 +1548,7 @@ void translateInstGetTableN(IrBuilder& build, const Instruction* pc, int pcpos)
     FallbackStreamScope scope(build, fallback, next);
 
     build.inst(IrCmd::SET_SAVEDPC, build.constUint(pcpos + 1));
-    build.inst(IrCmd::GET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c + 1));
+    build.inst(IrCmd::GET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c));
     build.inst(IrCmd::JUMP, next);
 }
 
@@ -1563,7 +1563,7 @@ void translateInstSetTableN(IrBuilder& build, const Instruction* pc, int pcpos)
     if (isUserdataBytecodeType(bcTypes.a))
     {
         build.inst(IrCmd::SET_SAVEDPC, build.constUint(pcpos + 1));
-        build.inst(IrCmd::SET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c + 1));
+        build.inst(IrCmd::SET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c));
         return;
     }
 
@@ -1589,7 +1589,7 @@ void translateInstSetTableN(IrBuilder& build, const Instruction* pc, int pcpos)
     FallbackStreamScope scope(build, fallback, next);
 
     build.inst(IrCmd::SET_SAVEDPC, build.constUint(pcpos + 1));
-    build.inst(IrCmd::SET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c + 1));
+    build.inst(IrCmd::SET_TABLE, build.vmReg(ra), build.vmReg(rb), build.constUint(c));
     build.inst(IrCmd::JUMP, next);
 }
 
@@ -1620,8 +1620,6 @@ void translateInstGetTable(IrBuilder& build, const Instruction* pc, int pcpos)
     IrOp vc = build.inst(IrCmd::LOAD_DOUBLE, build.vmReg(rc));
 
     IrOp index = build.inst(IrCmd::TRY_NUM_TO_INDEX, vc, fallback);
-
-    index = build.inst(IrCmd::SUB_INT, index, build.constInt(1));
 
     build.inst(IrCmd::CHECK_ARRAY_SIZE, vb, index, fallback);
     build.inst(IrCmd::CHECK_NO_METATABLE, vb, fallback);
@@ -1666,8 +1664,6 @@ void translateInstSetTable(IrBuilder& build, const Instruction* pc, int pcpos)
     IrOp vc = build.inst(IrCmd::LOAD_DOUBLE, build.vmReg(rc));
 
     IrOp index = build.inst(IrCmd::TRY_NUM_TO_INDEX, vc, fallback);
-
-    index = build.inst(IrCmd::SUB_INT, index, build.constInt(1));
 
     build.inst(IrCmd::CHECK_ARRAY_SIZE, vb, index, fallback);
     build.inst(IrCmd::CHECK_NO_METATABLE, vb, fallback);

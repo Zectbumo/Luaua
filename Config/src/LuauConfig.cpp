@@ -270,16 +270,20 @@ static std::optional<std::string> createLuauConfigFromLuauTable(
                 if (!key)
                     return "configuration array \"globals\" must only have numeric keys";
 
-                const size_t index = static_cast<size_t>(*key);
-                if (index < 1 || globalsTable->size() < index)
+                const double rawIndex = *key;
+                if (!(rawIndex >= 0.0 && rawIndex < double(globalsTable->size())))
+                    return "configuration array \"globals\" contains invalid numeric key";
+
+                const size_t index = static_cast<size_t>(rawIndex);
+                if (rawIndex != double(index))
                     return "configuration array \"globals\" contains invalid numeric key";
 
                 const std::string* global = v.get_if<std::string>();
                 if (!global)
                     return "configuration value in \"globals\" table must be a string";
 
-                LUAU_ASSERT(0 <= index - 1 && index - 1 < globalsTable->size());
-                globals[index - 1] = *global;
+                LUAU_ASSERT(index < globalsTable->size());
+                globals[index] = *global;
             }
 
             config.globals = std::move(globals);

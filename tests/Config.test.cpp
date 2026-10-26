@@ -248,8 +248,8 @@ TEST_CASE("extract_configuration")
     ConfigTable* globalsTable = (*luau)["globals"].get_if<ConfigTable>();
     REQUIRE(globalsTable);
     CHECK(globalsTable->size() == 1);
-    REQUIRE(globalsTable->contains(1));
-    std::string* global = (*globalsTable)[1].get_if<std::string>();
+    REQUIRE(globalsTable->contains(0.0));
+    std::string* global = (*globalsTable)[0.0].get_if<std::string>();
     REQUIRE(global);
     CHECK(*global == "expect");
 
@@ -361,6 +361,21 @@ TEST_CASE("validate_return_value")
         std::optional<std::string> error = extractLuauConfig(source, config, std::nullopt, InterruptCallbacks{});
         REQUIRE(error);
         CHECK(*error == expectedError);
+    }
+}
+
+TEST_CASE("reject_invalid_zero_based_globals_indices")
+{
+    for (const char* source : {
+             "return { luau = { globals = { [-1] = 'bad' } } }",
+             "return { luau = { globals = { [0.5] = 'bad' } } }",
+             "return { luau = { globals = { [1] = 'bad' } } }",
+         })
+    {
+        Config config;
+        std::optional<std::string> error = extractLuauConfig(source, config, std::nullopt, InterruptCallbacks{});
+        REQUIRE(error);
+        CHECK(*error == "configuration array \"globals\" contains invalid numeric key");
     }
 }
 

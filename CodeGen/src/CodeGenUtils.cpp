@@ -78,7 +78,7 @@ bool forgLoopTableIter(lua_State* L, LuaTable* h, int index, TValue* ra)
         if (!ttisnil(e))
         {
             setpvalue(ra + 2, reinterpret_cast<void*>(uintptr_t(index + 1)), LU_TAG_ITERATOR);
-            setnvalue(ra + 3, double(index + 1));
+            setnvalue(ra + 3, double(index));
             setobj2s(L, ra + 4, e);
 
             return true;

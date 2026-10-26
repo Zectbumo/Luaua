@@ -39,7 +39,7 @@ struct ShapeVisitor : AstVisitor
     DenseHashMap2<AstLocal*, AstExprTable*> tables;
     DenseHashSet2<std::pair<AstExprTable*, AstName>, Hasher> fields;
 
-    DenseHashMap2<AstLocal*, unsigned int> loops; // iterator => upper bound for 1..k
+    DenseHashMap2<AstLocal*, unsigned int> loops; // iterator => dense element count produced from index 0
 
     ShapeVisitor(DenseHashMap2<AstExprTable*, TableShape>& shapes)
         : shapes(shapes)
@@ -77,7 +77,7 @@ struct ShapeVisitor : AstVisitor
         {
             TableShape& shape = shapes[*table];
 
-            if (number->value == double(shape.arraySize + 1))
+            if (number->value == double(shape.arraySize))
                 shape.arraySize += 1;
         }
         else if (AstExprLocal* iter = index->as<AstExprLocal>())
@@ -138,8 +138,11 @@ struct ShapeVisitor : AstVisitor
         AstExprConstantNumber* from = node->from->as<AstExprConstantNumber>();
         AstExprConstantNumber* to = node->to->as<AstExprConstantNumber>();
 
-        if (from && to && from->value == 1.0 && to->value >= 1.0 && to->value <= double(kMaxLoopBound) && !node->step)
-            loops[node->var] = unsigned(to->value);
+        if (from && to && from->value == 0.0 && to->value >= 0.0 && to->value <= double(kMaxLoopBound) && !node->step)
+        {
+            unsigned int bound = unsigned(to->value);
+            loops[node->var] = bound + (double(bound) < to->value);
+        }
 
         return true;
     }

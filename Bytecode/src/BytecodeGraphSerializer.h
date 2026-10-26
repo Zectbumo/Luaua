@@ -316,11 +316,11 @@ struct BytecodeGraphSerializer
             break;
 
         case LOP_GETTABLEN:
-            bcb.emitABC(LOP_GETTABLEN, getRegister(insnOp), getRegInput(insn, 0), getImmInt(insn, 1) - 1);
+            bcb.emitABC(LOP_GETTABLEN, getRegister(insnOp), getRegInput(insn, 0), getImmInt(insn, 1));
             break;
 
         case LOP_SETTABLEN:
-            bcb.emitABC(LOP_SETTABLEN, getRegInput(insn, 0), getRegInput(insn, 1), getImmInt(insn, 2) - 1);
+            bcb.emitABC(LOP_SETTABLEN, getRegInput(insn, 0), getRegInput(insn, 1), getImmInt(insn, 2));
             break;
 
         case LOP_NEWCLOSURE:

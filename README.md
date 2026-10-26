@@ -1,7 +1,9 @@
-Luau ![CI](https://github.com/luau-lang/luau/actions/workflows/build.yml/badge.svg) [![codecov](https://codecov.io/gh/luau-lang/luau/branch/master/graph/badge.svg)](https://codecov.io/gh/luau-lang/luau)
-====
+Luaua
+=====
 
-Luau (lowercase u, /ˈlu.aʊ/) is a fast, small, safe, gradually typed embeddable scripting language derived from [Lua](https://lua.org).
+Luaua is a semantic fork of [Luau](https://github.com/luau-lang/luau) in which every Lua-visible sequence is zero-based and positional ranges use `[start, end)` semantics. Lengths remain counts. Luaua intentionally retains the upstream `luau` and `luau-analyze` executable names, CMake targets, headers, namespaces, and C APIs while being source- and bytecode-incompatible with upstream Luau. The exact upstream release is recorded in [UPSTREAM.md](UPSTREAM.md).
+
+Upstream Luau (lowercase u, /ˈlu.aʊ/) is a fast, small, safe, gradually typed embeddable scripting language derived from [Lua](https://lua.org).
 
 It is designed to be backwards compatible with Lua 5.1, as well as incorporating [some features](https://luau.org/compatibility) from future Lua releases, but also expands the feature set (most notably with type annotations and a state-of-the-art type inference system). Luau is largely implemented from scratch, with the language runtime being a very heavily modified version of Lua 5.1 runtime, with completely rewritten interpreter and other [performance innovations](https://luau.org/performance). The runtime mostly preserves Lua 5.1 API, so existing bindings should be more or less compatible with a few caveats.
 

@@ -10,19 +10,19 @@ function bar()
 	coroutine.yield()
 end
 
-assert(foo():find("foo") > 0)
-assert(foo("hello"):find("hello") > 0)
-assert(foo("hello"):find("foo") > 0)
-assert(foo("hello", 2):find("hello") > 0)
+assert(foo():find("foo") ~= nil)
+assert(foo("hello"):find("hello") ~= nil)
+assert(foo("hello"):find("foo") ~= nil)
+assert(foo("hello", 2):find("hello") ~= nil)
 assert(foo("hello", 2):find("foo") == nil)
 
 local co = coroutine.create(bar)
 coroutine.resume(co)
 
-assert(debug.traceback(co):find("bar") > 0)
-assert(debug.traceback(co, "hello"):find("hello") > 0)
-assert(debug.traceback(co, "hello"):find("bar") > 0)
-assert(debug.traceback(co, "hello", 2):find("hello") > 0)
+assert(debug.traceback(co):find("bar") ~= nil)
+assert(debug.traceback(co, "hello"):find("hello") ~= nil)
+assert(debug.traceback(co, "hello"):find("bar") ~= nil)
+assert(debug.traceback(co, "hello", 2):find("hello") ~= nil)
 assert(debug.traceback(co, "hello", 2):find("bar") == nil)
 
 -- traceback for the top frame
@@ -85,10 +85,10 @@ function quux(...)
 end
 
 assert(#(quux(1, "nlsf")) == 4)
-assert(quux(1, "nlsf")[1] == "quux")
-assert(quux(1, "nlsf")[2] > 64)
-assert(quux(1, "nlsf")[3] == "debug.luau")
-assert(quux(1, "nlsf")[4] == quux)
+assert(quux(1, "nlsf")[0] == "quux")
+assert(quux(1, "nlsf")[1] > 64)
+assert(quux(1, "nlsf")[2] == "debug.luau")
+assert(quux(1, "nlsf")[3] == quux)
 
 -- info arity
 function quuz(f)

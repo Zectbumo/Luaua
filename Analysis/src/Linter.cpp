@@ -1252,7 +1252,7 @@ private:
 
     double getLoopEnd(double from, double to)
     {
-        return from + floor(to - from);
+        return from + ceil(to - from) - 1.0;
     }
 
     bool visit(AstStatFor* node) override
@@ -1267,18 +1267,21 @@ private:
 
             Location rangeLocation(node->from->location, node->to->location);
 
-            // for i=#t,1 do
-            if (fu && fu->op == AstExprUnary::Op::Len && tc && tc->value == 1.0)
+            // for i=#t,0 do
+            if (fu && fu->op == AstExprUnary::Op::Len && tc && tc->value == 0.0)
                 emitWarning(
-                    *context, LintWarning::Code_ForRange, rangeLocation, "For loop should iterate backwards; did you forget to specify -1 as step?"
+                    *context,
+                    LintWarning::Code_ForRange,
+                    rangeLocation,
+                    "For loop over a table should use length - 1 as the start, -1 as the end, and -1 as the step"
                 );
             // for i=8,1 do
             else if (fc && tc && fc->value > tc->value)
                 emitWarning(
                     *context, LintWarning::Code_ForRange, rangeLocation, "For loop should iterate backwards; did you forget to specify -1 as step?"
                 );
-            // for i=1,8.75 do
-            else if (fc && tc && getLoopEnd(fc->value, tc->value) != tc->value)
+            // for i=0,8.75 do
+            else if (fc && tc && floor(tc->value - fc->value) != tc->value - fc->value)
                 emitWarning(
                     *context,
                     LintWarning::Code_ForRange,
@@ -1287,17 +1290,7 @@ private:
                     getLoopEnd(fc->value, tc->value),
                     tc->value
                 );
-            // for i=0,#t do
-            else if (fc && tu && fc->value == 0.0 && tu->op == AstExprUnary::Op::Len)
-                emitWarning(*context, LintWarning::Code_ForRange, rangeLocation, "For loop starts at 0, but arrays start at 1");
-            // for i=#t,0 do
-            else if (fu && fu->op == AstExprUnary::Op::Len && tc && tc->value == 0.0)
-                emitWarning(
-                    *context,
-                    LintWarning::Code_ForRange,
-                    rangeLocation,
-                    "For loop should iterate backwards; did you forget to specify -1 as step? Also consider changing 0 to 1 since arrays start at 1"
-                );
+            (void)tu;
         }
 
         return true;
@@ -1928,7 +1921,7 @@ private:
             }
             else if (AstExprConstantNumber* expr = item.key->as<AstExprConstantNumber>())
             {
-                if (expr->value >= 1 && expr->value <= double(count) && double(int(expr->value)) == expr->value)
+                if (expr->value >= 0 && expr->value < double(count) && double(int(expr->value)) == expr->value)
                     emitWarning(
                         *context,
                         LintWarning::Code_TableLiteral,
@@ -2659,81 +2652,41 @@ private:
 
         if (func->index == "insert" && node->args.size >= 3)
         {
-            // table.insert(t, 0, ?)
-            if (isConstant(args[1], 0.0))
-                emitWarning(
-                    *context,
-                    LintWarning::Code_TableOperations,
-                    args[1]->location,
-                    "table.insert uses index 0 but arrays are 1-based; did you mean 1 instead?"
-                );
-
             // table.insert(t, #t, ?)
             if (isLength(args[1], args[0]))
                 emitWarning(
                     *context,
                     LintWarning::Code_TableOperations,
                     args[1]->location,
-                    "table.insert will insert the value before the last element, which is likely a bug; consider removing the second argument or "
-                    "wrap it in parentheses to silence"
-                );
-
-            // table.insert(t, #t+1, ?)
-            if (AstExprBinary* add = args[1]->as<AstExprBinary>();
-                add && add->op == AstExprBinary::Add && isLength(add->left, args[0]) && isConstant(add->right, 1.0))
-                emitWarning(
-                    *context,
-                    LintWarning::Code_TableOperations,
-                    args[1]->location,
                     "table.insert will append the value to the table; consider removing the second argument for efficiency"
                 );
-        }
 
-        if (func->index == "remove" && node->args.size >= 2)
-        {
-            // table.remove(t, 0)
-            if (isConstant(args[1], 0.0))
-                emitWarning(
-                    *context,
-                    LintWarning::Code_TableOperations,
-                    args[1]->location,
-                    "table.remove uses index 0 but arrays are 1-based; did you mean 1 instead?"
-                );
-
-            // note: it's tempting to check for table.remove(t, #t), which is equivalent to table.remove(t), but it's correct, occurs frequently,
-            // and also reads better.
-
-            // table.remove(t, #t-1)
+            // table.insert(t, #t-1, ?)
             if (AstExprBinary* sub = args[1]->as<AstExprBinary>();
                 sub && sub->op == AstExprBinary::Sub && isLength(sub->left, args[0]) && isConstant(sub->right, 1.0))
                 emitWarning(
                     *context,
                     LintWarning::Code_TableOperations,
                     args[1]->location,
-                    "table.remove will remove the value before the last element, which is likely a bug; consider removing the second argument or "
-                    "wrap it in parentheses to silence"
+                    "table.insert will insert the value before the last element, which is likely a bug; wrap the index in parentheses to silence"
+                );
+        }
+
+        if (func->index == "remove" && node->args.size >= 2)
+        {
+            // table.remove(t, #t)
+            if (isLength(args[1], args[0]))
+                emitWarning(
+                    *context,
+                    LintWarning::Code_TableOperations,
+                    args[1]->location,
+                    "table.remove index #t is past the last element; use #t-1 or omit the second argument"
                 );
         }
 
         if (func->index == "move" && node->args.size >= 4)
         {
-            // table.move(t, 0, _, _)
-            if (isConstant(args[1], 0.0))
-                emitWarning(
-                    *context,
-                    LintWarning::Code_TableOperations,
-                    args[1]->location,
-                    "table.move uses index 0 but arrays are 1-based; did you mean 1 instead?"
-                );
-
-            // table.move(t, _, _, 0)
-            else if (isConstant(args[3], 0.0))
-                emitWarning(
-                    *context,
-                    LintWarning::Code_TableOperations,
-                    args[3]->location,
-                    "table.move uses index 0 but arrays are 1-based; did you mean 1 instead?"
-                );
+            // Zero is the first valid source and destination index in Luaua.
         }
 
         if (func->index == "create" && node->args.size == 2)

@@ -43,7 +43,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "generalization_shouldnt_seal_table_in_len_fu
         return;
     CheckResult result = check(R"(
 local t = {}
-for i = #t, 2, -1 do
+for i = #t - 1, 0, -1 do
     t[i] = t[i + 1]
 end
     )");
@@ -233,7 +233,7 @@ TEST_CASE_FIXTURE(Fixture, "report_sensible_error_when_adding_a_value_to_a_nonex
 {
     CheckResult result = check(R"(
         local t = {}
-        t.foo[1] = 'one'
+        t.foo[0] = 'one'
     )");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);
@@ -659,8 +659,8 @@ TEST_CASE_FIXTURE(Fixture, "infer_array")
 {
     CheckResult result = check(R"(
         local t = {}
-        t[1] = 'one'
-        t[2] = 'two'
+        t[0] = 'one'
+        t[1] = 'two'
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -690,7 +690,7 @@ TEST_CASE_FIXTURE(Fixture, "infer_array_2")
 
         function createButton( actionName, functionInfoTable )
             local position = nil
-            for i = 1,#buttonVector do
+            for i = 0,#buttonVector do
                 if buttonVector[i] == "empty" then
                     position = i
                     break
@@ -960,7 +960,7 @@ TEST_CASE_FIXTURE(Fixture, "infer_type_when_indexing_from_a_table_indexer")
 {
     CheckResult result = check(R"(
         function f(t: {string})
-            return t[1]
+            return t[0]
         end
 
         local s = f({})
@@ -2086,7 +2086,7 @@ TEST_CASE_FIXTURE(Fixture, "only_ascribe_synthetic_names_at_module_scope")
         local TopLevel = {}
         local foo
 
-        for i = 1, 10 do
+        for i = 0, 10 do
             local SubScope = { 1, 2, 3 }
             foo = SubScope
         end
@@ -3066,7 +3066,7 @@ TEST_CASE_FIXTURE(Fixture, "generalize_table_argument")
     CheckResult result = check(R"(
         function foo(arr)
             local work = {}
-            for i = 1, #arr do
+            for i = 0, #arr do
                 work[i] = arr[i]
             end
 
@@ -3556,13 +3556,13 @@ TEST_CASE_FIXTURE(Fixture, "inferred_properties_of_a_table_should_start_with_the
         local T = {}
 
         local function f(prop)
-            T[1] = {
+            T[0] = {
                 prop = prop,
             }
         end
 
         local function g()
-            local l = T[1].prop
+            local l = T[0].prop
         end
     )");
 
@@ -3837,7 +3837,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "a_free_shape_can_turn_into_a_scalar_directly
     CheckResult result = check(R"(
         local function stringByteList(str)
             local out = {}
-            for i = 1, #str do
+            for i = 0, #str do
                 table.insert(out, string.byte(str, i))
             end
             return table.concat(out, ",")
@@ -4149,7 +4149,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "top_table_type_is_isomorphic_to_empty_sealed
         end
 
         function assign(...)
-            for index = 1, select("#", ...) do
+            for index = 0, select("#", ...) do
                 local rest = select(index, ...)
 
                 if rest ~= nil and typeof(rest) == "table" then
@@ -4746,8 +4746,8 @@ TEST_CASE_FIXTURE(Fixture, "read_only_array_shorthand")
     // {read T} is a read-only array (desugars to {read [number]: T}).
     CheckResult result = check(R"(
         local t: {read number} = {1, 2, 3}
-        local x: number = t[1]
-        t[1] = 4
+        local x: number = t[0]
+        t[0] = 4
     )");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);
@@ -4874,7 +4874,7 @@ TEST_CASE_FIXTURE(Fixture, "table_writes_introduce_write_properties")
     CheckResult result = check(R"(
         function oc(player, speaker)
             local head = speaker.Character:FindFirstChild('Head')
-            speaker.Character = player[1].Character
+            speaker.Character = player[0].Character
         end
     )");
 
@@ -4891,14 +4891,14 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "tables_can_have_both_metatables_and_indexers
 {
     CheckResult result = check(R"(
         local a = {}
-        a[1] = 5
-        a[2] = 17
+        a[0] = 5
+        a[1] = 17
 
         local t = {}
         setmetatable(a, t)
 
-        local c = a[1]
-        print(a[1])
+        local c = a[0]
+        print(a[0])
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -4911,7 +4911,7 @@ TEST_CASE_FIXTURE(Fixture, "refined_thing_can_be_an_array")
     CheckResult result = check(R"(
         function foo(x, y)
             if x then
-                return x[1]
+                return x[0]
             else
                 return y
             end
@@ -5140,11 +5140,11 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "index_results_compare_to_nil")
         --!strict
 
         function foo(tbl: {number})
-            if tbl[2] == nil then
+            if tbl[1] == nil then
                 print("foo")
             end
 
-            if tbl[3] ~= nil then
+            if tbl[2] ~= nil then
                 print("bar")
             end
         end
@@ -5252,7 +5252,7 @@ TEST_CASE_FIXTURE(Fixture, "indexing_branching_table")
 
     CheckResult result = check(R"(
         local test = if true then { "meow", "woof" } else { 4, 81 }
-        local test2 = test[1]
+        local test2 = test[0]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -5274,7 +5274,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "indexing_branching_table2")
 {
     CheckResult result = check(R"(
         local test = if true then {} else {}
-        local test2 = test[1]
+        local test2 = test[0]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -5414,8 +5414,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "magic_functions_bidirectionally_inferred")
             return "hello", 42, "world"
         end
         local t: { [string]: number } = {
-            [select(1, getStuff())] = select(2, getStuff()),
-            [select(3, getStuff())] = select(2, getStuff())
+            [select(0, getStuff())] = select(1, getStuff()),
+            [select(2, getStuff())] = select(1, getStuff())
         }
     )");
 
@@ -5426,8 +5426,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "magic_functions_bidirectionally_inferred")
             return "hello", 42, "world"
         end
         local t: { [string]: number } = {
-            [select(1, getStuff())] = select(2, getStuff()),
-            [select(3, getStuff())] = select(3, getStuff())
+            [select(0, getStuff())] = select(1, getStuff()),
+            [select(2, getStuff())] = select(2, getStuff())
         }
     )");
 
@@ -6681,7 +6681,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "allow_indexing_into_error_or_not_nil")
             local valueType = typeof(value)
             if value == nil then
             elseif valueType == "table" then
-                for k = 1, #value do
+                for k = 0, #value do
                     local _ = value[k]
                 end
             end

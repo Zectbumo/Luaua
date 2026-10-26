@@ -57,7 +57,7 @@ n = 0
 k = 300
 while n < k do s = s..x; n=n+1; j=tostring(n)  end
 assert(string.len(s) == k*80)
-s = string.sub(s, 1, 20000)
+s = string.sub(s, 0, 20000)
 s, i = string.gsub(s, '(%d%d%d%d)', math.sin)
 assert(i==20000/4)
 s = nil
@@ -123,7 +123,7 @@ end
 lim = 15
 a = {}
 -- fill a with `collectable' indices
-for i=1,lim do a[{}] = i end
+for i=1,lim+1 do a[{}] = i end
 b = {}
 for k,v in pairs(a) do b[k]=v end
 -- remove all indices and collect them
@@ -144,9 +144,9 @@ a = {}; setmetatable(a, {__mode = 'k'});
 -- fill a with some `collectable' indices
 for i=1,lim do a[{}] = i end
 -- and some non-collectable ones
-for i=1,lim do local t={}; a[t]=t end
-for i=1,lim do a[i] = i end
-for i=1,lim do local s=string.rep('@', i); a[s] = s..'#' end
+for i=1,lim+1 do local t={}; a[t]=t end
+for i=1,lim+1 do a[i] = i end
+for i=1,lim+1 do local s=string.rep('@', i); a[s] = s..'#' end
 collectgarbage()
 local i = 0
 for k,v in pairs(a) do assert(k==v or k..'#'==v); i=i+1 end
@@ -161,8 +161,8 @@ a[1] = nil
 for i=1,lim do a[i] = {} end
 for i=1,lim do a[i..'x'] = {} end
 -- and some non-collectable ones
-for i=1,lim do local t={}; a[t]=t end
-for i=1,lim do a[i+lim]=i..'x' end
+for i=1,lim+1 do local t={}; a[t]=t end
+for i=1,lim+1 do a[i+lim]=i..'x' end
 collectgarbage()
 local i = 0
 for k,v in pairs(a) do assert(k==v or k-lim..'x' == v); i=i+1 end
@@ -363,9 +363,9 @@ do
     local c = coroutine.wrap(function()
       local uv = {i + 1}
       local function f()
-        return uv[1] * 10
+        return uv[0] * 10
       end
-      coroutine.yield(uv[1])
+      coroutine.yield(uv[0])
       uv = {i + 2}
       coroutine.yield(f())
     end)
@@ -374,7 +374,7 @@ do
     table.insert(t, c)
   end
 
-  for i = 1,100 do
+  for i = 0,100 do
     t[i] = nil
   end
 
@@ -388,9 +388,9 @@ do
     local c = coroutine.wrap(function()
       local uv = {i + 1}
       local function f()
-        return uv[1] * 10
+        return uv[0] * 10
       end
-      coroutine.yield(uv[1])
+      coroutine.yield(uv[0])
       uv = {i + 2}
       coroutine.yield(f())
     end)

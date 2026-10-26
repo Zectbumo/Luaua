@@ -397,7 +397,7 @@ void emitInstForGLoop(IrRegAllocX64& regs, AssemblyBuilderX64& build, int ra, in
     build.cmp(dwordReg(index), dword[table + offsetof(LuaTable, sizearray)]);
     build.jcc(ConditionX64::NotBelow, skipArray);
 
-    // If element is nil, we increment the index; if it's not, we still need 'index + 1' inside
+    // Advance the encoded cursor; the Lua-visible key remains the previous physical index.
     build.inc(index);
 
     build.cmp(dword[elemPtr + offsetof(TValue, tt)], LUA_TNIL);
@@ -408,8 +408,10 @@ void emitInstForGLoop(IrRegAllocX64& regs, AssemblyBuilderX64& build, int ra, in
     // Extra should already be set to LU_TAG_ITERATOR
     // Tag should already be set to lightuserdata
 
-    // setnvalue(ra + 3, double(index + 1));
+    // setnvalue(ra + 3, double(index - 1));
+    build.dec(index);
     build.vcvtsi2sd(xmm0, xmm0, dwordReg(index));
+    build.inc(index);
     build.vmovsd(luauRegValue(ra + 3), xmm0);
     build.mov(luauRegTag(ra + 3), LUA_TNUMBER);
 

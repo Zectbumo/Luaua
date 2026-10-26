@@ -150,25 +150,25 @@ do
     
     local function fuzzyeq(x, y, eps) return x == y or math.abs(x - y) < (eps or 1e-6) end
 
-    assert(fuzzyeq(vector.angle(rand[10], rand[1]), math.abs(ans[10])))
-    assert(fuzzyeq(vector.angle(rand[2], rand[3]), math.abs(ans[1])))
-    assert(fuzzyeq(vector.angle(rand[4], rand[5]), math.abs(ans[2])))
-    assert(fuzzyeq(vector.angle(vector.zero, rand[6]), math.abs(ans[3])))
-    assert(fuzzyeq(vector.angle(vector.one, rand[7]), math.abs(ans[4])))
-    assert(fuzzyeq(vector.angle(vector.zero, vector.zero), math.abs(ans[5])))
-    assert(fuzzyeq(vector.angle(rand[8], rand[8]), math.abs(ans[6])))
-    assert(fuzzyeq(vector.angle(-rand[8], rand[8]), math.abs(ans[7])))
-    assert(fuzzyeq(vector.angle(rand[9], rand[9] + vector.create(0, 1, 0) * 0.001), math.abs(ans[8]), 1e-3)) -- slightly more generous eps
-    assert(fuzzyeq(vector.angle(vector.create(1, 0, 0), vector.create(0, 1, 0)), math.abs(ans[9])))
+    assert(fuzzyeq(vector.angle(rand[9], rand[0]), math.abs(ans[9])))
+    assert(fuzzyeq(vector.angle(rand[1], rand[2]), math.abs(ans[0])))
+    assert(fuzzyeq(vector.angle(rand[3], rand[4]), math.abs(ans[1])))
+    assert(fuzzyeq(vector.angle(vector.zero, rand[5]), math.abs(ans[2])))
+    assert(fuzzyeq(vector.angle(vector.one, rand[6]), math.abs(ans[3])))
+    assert(fuzzyeq(vector.angle(vector.zero, vector.zero), math.abs(ans[4])))
+    assert(fuzzyeq(vector.angle(rand[7], rand[7]), math.abs(ans[5])))
+    assert(fuzzyeq(vector.angle(-rand[7], rand[7]), math.abs(ans[6])))
+    assert(fuzzyeq(vector.angle(rand[8], rand[8] + vector.create(0, 1, 0) * 0.001), math.abs(ans[7]), 1e-3)) -- slightly more generous eps
+    assert(fuzzyeq(vector.angle(vector.create(1, 0, 0), vector.create(0, 1, 0)), math.abs(ans[8])))
 
-    assert(fuzzyeq(vector.angle(rand[10], rand[1], rand[2]), ans[10]))
-    assert(fuzzyeq(vector.angle(rand[2], rand[3], rand[4]), ans[1]))
-    assert(fuzzyeq(vector.angle(vector.zero, rand[6], rand[10]), ans[3]))
-    assert(fuzzyeq(vector.angle(vector.one, rand[7], rand[10]), ans[4]))
-    assert(fuzzyeq(vector.angle(vector.zero, vector.zero, vector.zero), ans[5]))
-    assert(fuzzyeq(vector.angle(rand[8], rand[8], rand[10]), ans[6]))
-    assert(fuzzyeq(vector.angle(rand[9], rand[9] + vector.create(0, 1, 0) * 0.001, rand[10]), ans[8], 1e-3)) -- slightly more generous eps
-    assert(fuzzyeq(vector.angle(vector.create(1, 0, 0), vector.create(0, 1, 0), rand[10]), ans[9]))
+    assert(fuzzyeq(vector.angle(rand[9], rand[0], rand[1]), ans[9]))
+    assert(fuzzyeq(vector.angle(rand[1], rand[2], rand[3]), ans[0]))
+    assert(fuzzyeq(vector.angle(vector.zero, rand[5], rand[9]), ans[2]))
+    assert(fuzzyeq(vector.angle(vector.one, rand[6], rand[9]), ans[3]))
+    assert(fuzzyeq(vector.angle(vector.zero, vector.zero, vector.zero), ans[4]))
+    assert(fuzzyeq(vector.angle(rand[7], rand[7], rand[9]), ans[5]))
+    assert(fuzzyeq(vector.angle(rand[8], rand[8] + vector.create(0, 1, 0) * 0.001, rand[9]), ans[7], 1e-3)) -- slightly more generous eps
+    assert(fuzzyeq(vector.angle(vector.create(1, 0, 0), vector.create(0, 1, 0), rand[9]), ans[8]))
 end
 
 -- 'min'/'max'

@@ -4,7 +4,7 @@ print "testing datetime library"
 
 local function checkerr (msg, f, ...)
   local stat, err = pcall(f, ...)
-  assert(not stat and string.find(err, msg, 1, true))
+  assert(not stat and string.find(err, msg, 0, true))
 end
 
 assert(os.date("") == "")
@@ -50,14 +50,14 @@ local function checkDateTable (t)
   local D = os.date("!*t", t)
   assert(os.time(D) == t)
   local DC = os.date("!%Y %m %d %H %M %S %w %j"):split(" ")
-  assert(D.year == tonumber(DC[1]))
-  assert(D.month == tonumber(DC[2]))
-  assert(D.day == tonumber(DC[3]))
-  assert(D.hour == tonumber(DC[4]))
-  assert(D.min == tonumber(DC[5]))
-  assert(D.sec == tonumber(DC[6]))
-  assert(D.wday == tonumber(DC[7]) + 1)
-  assert(D.yday == tonumber(DC[8]))
+  assert(D.year == tonumber(DC[0]))
+  assert(D.month == tonumber(DC[1]))
+  assert(D.day == tonumber(DC[2]))
+  assert(D.hour == tonumber(DC[3]))
+  assert(D.min == tonumber(DC[4]))
+  assert(D.sec == tonumber(DC[5]))
+  assert(D.wday == tonumber(DC[6]) + 1)
+  assert(D.yday == tonumber(DC[7]))
 end
 
 checkDateTable(os.time())

@@ -197,7 +197,7 @@ static constexpr const char* kBuiltinDefinitionTableSrc = R"BUILTIN_SRC(
 declare table: {
     concat: <V>(t: {V}, sep: string?, i: number?, j: number?) -> string,
     insert: (<V>(t: {V}, value: V) -> ()) & (<V>(t: {V}, pos: number, value: V) -> ()),
-    maxn: <V>(t: {V}) -> number,
+    maxn: <V>(t: {V}) -> number?,
     remove: <V>(t: {V}, number?) -> V?,
     sort: <V>(t: {V}, comp: ((V, V) -> boolean)?) -> (),
     create: <V>(count: number, value: V?) -> {V},
@@ -235,7 +235,7 @@ declare utf8: {
     codes: @checked (str: string) -> ((string, number) -> (number, number), string, number),
     codepoint: @checked (str: string, i: number?, j: number?) -> ...number,
     len: @checked (s: string, i: number?, j: number?) -> (number?, number?),
-    offset: @checked (s: string, n: number?, i: number?) -> number,
+    offset: @checked (s: string, n: number?, i: number?) -> number?,
 }
 
 )BUILTIN_SRC";

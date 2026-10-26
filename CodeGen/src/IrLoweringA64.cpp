@@ -1798,16 +1798,16 @@ void IrLoweringA64::lowerInst(IrInst& inst, uint32_t index, const IrBlock& next)
         build.fcmpz(step);
         build.b(getConditionFP(IrCondition::Greater), direct);
 
-        // !(limit <= index)
+        // !(limit < index)
         build.fcmp(limit, index);
-        build.b(getConditionFP(IrCondition::NotLessEqual), labelOp(OP_E(inst)));
+        build.b(getConditionFP(IrCondition::NotLess), labelOp(OP_E(inst)));
         build.b(labelOp(OP_D(inst)));
 
-        // !(index <= limit)
+        // !(index < limit)
         build.setLabel(direct);
 
         build.fcmp(index, limit);
-        build.b(getConditionFP(IrCondition::NotLessEqual), labelOp(OP_E(inst)));
+        build.b(getConditionFP(IrCondition::NotLess), labelOp(OP_E(inst)));
         jumpOrFallthrough(blockOp(OP_D(inst)), next);
         break;
     }

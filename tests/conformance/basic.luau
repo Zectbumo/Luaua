@@ -175,17 +175,17 @@ assert((function() repeat local a = 5 until a - 4 < 0 or a - 4 >= 0 end)() == ni
 
 -- numeric for
 -- basic tests with positive/negative step sizes
-assert((function() local a = 1 for b=1,9 do a = a * 2 end return a end)() == 512)
-assert((function() local a = 1 for b=1,9,2 do a = a * 2 end return a end)() == 32)
+assert((function() local a = 1 for b=1,9 do a = a * 2 end return a end)() == 256)
+assert((function() local a = 1 for b=1,9,2 do a = a * 2 end return a end)() == 16)
 assert((function() local a = 1 for b=1,9,-2 do a = a * 2 end return a end)() == 1)
-assert((function() local a = 1 for b=9,1,-2 do a = a * 2 end return a end)() == 32)
+assert((function() local a = 1 for b=9,1,-2 do a = a * 2 end return a end)() == 16)
 
 -- make sure break works
 assert((function() local a = 1 for b=1,9 do a = a * 2 if a == 128 then break end end return a end)() == 128)
 assert((function() local a = 1 for b=1,9 do a = a * 2 if a == 128 then break else end end return a end)() == 128)
 
 -- make sure internal index is protected against modification
-assert((function() local a = 1 for b=9,1,-2 do a = a * 2 b = nil end return a end)() == 32)
+assert((function() local a = 1 for b=9,1,-2 do a = a * 2 b = nil end return a end)() == 16)
 
 -- make sure that when step is 0, we treat it as backward iteration (and as such, iterate zero times or indefinitely)
 -- this is consistent with Lua 5.1; future Lua versions emit an error when step is 0; LuaJIT instead treats 0 as forward iteration
@@ -212,31 +212,31 @@ assert((function() local c = 0 for i=10,1,nan do c += 1 end return c end)() == 1
 
 -- make sure that when index becomes nan mid-iteration, we correctly exit the loop (this is broken in Lua 5.1; future Lua versions fix this)
 assert((function() local c = 0 for i=-math.huge,0,math.huge do c += 1 end return c end)() == 1)
-assert((function() local c = 0 for i=math.huge,math.huge,-math.huge do c += 1 end return c end)() == 1)
+assert((function() local c = 0 for i=math.huge,math.huge,-math.huge do c += 1 end return c end)() == 0)
 
 -- generic for
 -- ipairs
-assert((function() local a = '' for k in ipairs({5, 6, 7}) do a = a .. k end return a end)() == "123")
-assert((function() local a = '' for k,v in ipairs({5, 6, 7}) do a = a .. k end return a end)() == "123")
+assert((function() local a = '' for k in ipairs({5, 6, 7}) do a = a .. k end return a end)() == "012")
+assert((function() local a = '' for k,v in ipairs({5, 6, 7}) do a = a .. k end return a end)() == "012")
 assert((function() local a = '' for k,v in ipairs({5, 6, 7}) do a = a .. v end return a end)() == "567")
 
 -- ipairs with gaps
-assert((function() local a = '' for k in ipairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "123")
-assert((function() local a = '' for k,v in ipairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "123")
+assert((function() local a = '' for k in ipairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "012")
+assert((function() local a = '' for k,v in ipairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "012")
 assert((function() local a = '' for k,v in ipairs({5, 6, 7, nil, 8}) do a = a .. v end return a end)() == "567")
 
 -- manual ipairs/inext
 local inext = ipairs({5,6,7})
-assert(concat(inext({5,6,7}, 2)) == "3,7")
+assert(concat(inext({5,6,7}, 1)) == "2,7")
 
 -- pairs on array
-assert((function() local a = '' for k in pairs({5, 6, 7}) do a = a .. k end return a end)() == "123")
-assert((function() local a = '' for k,v in pairs({5, 6, 7}) do a = a .. k end return a end)() == "123")
+assert((function() local a = '' for k in pairs({5, 6, 7}) do a = a .. k end return a end)() == "012")
+assert((function() local a = '' for k,v in pairs({5, 6, 7}) do a = a .. k end return a end)() == "012")
 assert((function() local a = '' for k,v in pairs({5, 6, 7}) do a = a .. v end return a end)() == "567")
 
 -- pairs on array with gaps
-assert((function() local a = '' for k in pairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "1235")
-assert((function() local a = '' for k,v in pairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "1235")
+assert((function() local a = '' for k in pairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "0124")
+assert((function() local a = '' for k,v in pairs({5, 6, 7, nil, 8}) do a = a .. k end return a end)() == "0124")
 assert((function() local a = '' for k,v in pairs({5, 6, 7, nil, 8}) do a = a .. v end return a end)() == "5678")
 
 -- pairs on table
@@ -246,12 +246,12 @@ assert((function() local a = {} for k,v in pairs({a=1, b=2, c=3}) do a[k] = v en
 
 -- pairs on mixed array/table + gaps in the array portion
 -- note that a,b,c results in a,c,b during traversal since index is based on hash & size
-assert((function() local a = {} for k,v in pairs({1, 2, 3, a=5, b=6, c=7}) do a[#a+1] = v end return table.concat(a, ',') end)() == "1,2,3,5,7,6")
-assert((function() local a = {} for k,v in pairs({1, 2, 3, nil, 4, a=5, b=6, c=7}) do a[#a+1] = v end return table.concat(a, ',') end)() == "1,2,3,4,5,7,6")
+assert((function() local a = {} for k,v in pairs({1, 2, 3, a=5, b=6, c=7}) do a[#a] = v end return table.concat(a, ',') end)() == "1,2,3,5,7,6")
+assert((function() local a = {} for k,v in pairs({1, 2, 3, nil, 4, a=5, b=6, c=7}) do a[#a] = v end return table.concat(a, ',') end)() == "1,2,3,4,5,7,6")
 
 -- pairs manually
-assert((function() local a = '' for k in next,{5, 6, 7} do a = a .. k end return a end)() == "123")
-assert((function() local a = '' for k,v in next,{5, 6, 7} do a = a .. k end return a end)() == "123")
+assert((function() local a = '' for k in next,{5, 6, 7} do a = a .. k end return a end)() == "012")
+assert((function() local a = '' for k,v in next,{5, 6, 7} do a = a .. k end return a end)() == "012")
 assert((function() local a = '' for k,v in next,{5, 6, 7} do a = a .. v end return a end)() == "567")
 assert((function() local a = {} for k in next,{a=1, b=2, c=3} do a[k] = 1 end return a.a + a.b + a.c end)() == 3)
 assert((function() local a = {} for k,v in next,{a=1, b=2, c=3} do a[k] = 1 end return a.a + a.b + a.c end)() == 3)
@@ -269,11 +269,11 @@ assert((function() local a = 1 for b in pairs({1,2,3}) do a = a * 2 b = nil end 
 
 -- make sure custom iterators work! example is from PIL 7.1
 function list_iter(t)
-    local i = 0
+    local i = -1
     local n = table.getn(t)
     return function()
         i = i + 1
-        if i <= n then return t[i] end
+        if i < n then return t[i] end
     end
 end
 
@@ -287,7 +287,7 @@ assert((function() local function f() return {5,6,7},8,9,0 end local a = '' for 
 assert((function() local t = {} return #t end)() == 0)
 
 assert((function() local t = {1, 2} return #t end)() == 2)
-assert((function() local t = {1, 2} return t[1] + t[2] end)() == 3)
+assert((function() local t = {1, 2} return t[0] + t[1] end)() == 3)
 
 assert((function() local t = {data = 4} return t.data end)() == 4)
 assert((function() local t = {[1+2] = 4} return t[3] end)() == 4)
@@ -361,7 +361,7 @@ assert((function() function foo(...) return ... end function bar(...) return foo
 assert((function() function foo(a, ...) return a + 10, ... end function bar(a, ...) return foo(a * 2, ...) end return concat(bar(1, 2, 3)) end)() == "12,2,3")
 
 -- manual pack
-assert((function() function pack(first, ...) if not first then return {} end local t = pack(...) table.insert(t, 1, first) return t end function foo(...) return pack(...) end return #foo(0, 1, 2) end)() == 3)
+assert((function() function pack(first, ...) if not first then return {} end local t = pack(...) table.insert(t, 0, first) return t end function foo(...) return pack(...) end return #foo(0, 1, 2) end)() == 3)
 
 -- multret + table literals
 -- basic tests
@@ -377,20 +377,20 @@ assert((function() function foo() return 1, 2, 3 end return table.concat({1, 2, 
 assert((function() function foo() return 1, 2, 3 end return table.concat({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, foo()}, ',') end)() == "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1,2,3")
 
 -- table access
-assert((function() local t = {6, 9, 7} return t[2] end)() == 9)
-assert((function() local t = {6, 9, 7} return t[0] end)() == nil)
-assert((function() local t = {6, 9, 7} return t[4] end)() == nil)
-assert((function() local t = {6, 9, 7} return t[4.5] end)() == nil)
-assert((function() local t = {6, 9, 7, [4.5]=11} return t[4.5] end)() == 11)
+assert((function() local t = {6, 9, 7} return t[1] end)() == 9)
+assert((function() local t = {6, 9, 7} return t[-1] end)() == nil)
+assert((function() local t = {6, 9, 7} return t[3] end)() == nil)
+assert((function() local t = {6, 9, 7} return t[3.5] end)() == nil)
+assert((function() local t = {6, 9, 7, [3.5]=11} return t[3.5] end)() == 11)
 assert((function() local t = {6, 9, 7, a=11} return t['a'] end)() == 11)
-assert((function() local t = {6, 9, 7} setmetatable(t, { __index = function(t,i) return i * 10 end }) return concat(t[2],t[5]) end)() == "9,50")
+assert((function() local t = {6, 9, 7} setmetatable(t, { __index = function(t,i) return i * 10 end }) return concat(t[1],t[4]) end)() == "9,40")
 
-assert((function() local t = {6, 9, 7} t[2] = 10 return t[2] end)() == 10)
-assert((function() local t = {6, 9, 7} t[0] = 5 return t[0] end)() == 5)
-assert((function() local t = {6, 9, 7} t[4] = 10 return t[4] end)() == 10)
-assert((function() local t = {6, 9, 7} t[4.5] = 10 return t[4.5] end)() == 10)
+assert((function() local t = {6, 9, 7} t[1] = 10 return t[1] end)() == 10)
+assert((function() local t = {6, 9, 7} t[-1] = 5 return t[-1] end)() == 5)
+assert((function() local t = {6, 9, 7} t[3] = 10 return t[3] end)() == 10)
+assert((function() local t = {6, 9, 7} t[3.5] = 10 return t[3.5] end)() == 10)
 assert((function() local t = {6, 9, 7} t['a'] = 11 return t['a'] end)() == 11)
-assert((function() local t = {6, 9, 7} setmetatable(t, { __newindex = function(t,i,v) rawset(t, i * 10, v) end }) t[1] = 17 t[5] = 1 return concat(t[1],t[5],t[50]) end)() == "17,nil,1")
+assert((function() local t = {6, 9, 7} setmetatable(t, { __newindex = function(t,i,v) rawset(t, i * 10, v) end }) t[0] = 17 t[4] = 1 return concat(t[0],t[4],t[40]) end)() == "17,nil,1")
 
 -- userdata access
 assert((function() local ud = newproxy(true) getmetatable(ud).__index = function(ud,i) return i * 10 end return ud[2] end)() == 20)
@@ -441,7 +441,7 @@ end)() == 5)
 assert((function()
     local a = {5}
     local b = {6}
-    local mt = { __index = function() return b[1] end }
+    local mt = { __index = function() return b[0] end }
     setmetatable(a, mt)
     b = a.hi
     return b
@@ -449,9 +449,9 @@ end)() == 6)
 
 -- table access:  fast-path tests for array lookup
 -- in-bounds array lookup shouldn't call into Lua, but if the element isn't there we'll still call the metatable
-assert((function() local a = {9, [1.5] = 7} return a[1], a[2], a[1.5] end)() == 9,nil,7)
-assert((function() local a = {9, [1.5] = 7} setmetatable(a, { __index = function() return 5 end }) return concat(a[1],a[2],a[1.5]) end)() == "9,5,7")
-assert((function() local a = {9, nil, 11} setmetatable(a, { __index = function() return 5 end }) return concat(a[1],a[2],a[3],a[4]) end)() == "9,5,11,5")
+assert((function() local a = {9, [1.5] = 7} return a[0], a[1], a[1.5] end)() == 9,nil,7)
+assert((function() local a = {9, [1.5] = 7} setmetatable(a, { __index = function() return 5 end }) return concat(a[0],a[1],a[1.5]) end)() == "9,5,7")
+assert((function() local a = {9, nil, 11} setmetatable(a, { __index = function() return 5 end }) return concat(a[0],a[1],a[2],a[3]) end)() == "9,5,11,5")
 
 -- namecall for userdata: technically not officially supported but hard to test in a different way!
 -- warning: this test may break at any time as we may decide that we'll only use userdata-namecall on tagged user data objects
@@ -579,18 +579,18 @@ assert((function() function cmp(a,b) return a<b,a<=b,a>b,a>=b end return concat(
 assert((function() function cmp(a,b) return a<b,a<=b,a>b,a>=b end return concat(cmp('a', '\200')) end)() == "true,true,false,false")
 
 -- array access
-assert((function() local a = {4,5,6} return a[3] end)() == 6)
-assert((function() local a = {4,5,nil,6} return a[3] end)() == nil)
-assert((function() local a = {4,5,nil,6} setmetatable(a, { __index = function() return 42 end }) return a[4] end)() == 6)
-assert((function() local a = {4,5,nil,6} setmetatable(a, { __index = function() return 42 end }) return a[3] end)() == 42)
-assert((function() local a = {4,5,6} a[3] = 8 return a[3] end)() == 8)
-assert((function() local a = {4,5,nil,6} a[3] = 8 return a[3] end)() == 8)
-assert((function() local a = {4,5,nil,6} setmetatable(a, { __newindex = function(t,i) rawset(t,i,42) end }) a[4] = 0 return a[4] end)() == 0)
-assert((function() local a = {4,5,nil,6} setmetatable(a, { __newindex = function(t,i) rawset(t,i,42) end }) a[3] = 0 return a[3] end)() == 42)
+assert((function() local a = {4,5,6} return a[2] end)() == 6)
+assert((function() local a = {4,5,nil,6} return a[2] end)() == nil)
+assert((function() local a = {4,5,nil,6} setmetatable(a, { __index = function() return 42 end }) return a[3] end)() == 6)
+assert((function() local a = {4,5,nil,6} setmetatable(a, { __index = function() return 42 end }) return a[2] end)() == 42)
+assert((function() local a = {4,5,6} a[2] = 8 return a[2] end)() == 8)
+assert((function() local a = {4,5,nil,6} a[2] = 8 return a[2] end)() == 8)
+assert((function() local a = {4,5,nil,6} setmetatable(a, { __newindex = function(t,i) rawset(t,i,42) end }) a[3] = 0 return a[3] end)() == 0)
+assert((function() local a = {4,5,nil,6} setmetatable(a, { __newindex = function(t,i) rawset(t,i,42) end }) a[2] = 0 return a[2] end)() == 42)
 
 -- array index for literal
-assert((function() local a = {4, 5, nil, 6} return concat(a[1], a[3], a[4], a[100]) end)() == "4,nil,6,nil")
-assert((function() local a = {4, 5, nil, 6} a[1] = 42 a[3] = 0 a[100] = 75 return concat(a[1], a[3], a[75], a[100]) end)() == "42,0,nil,75")
+assert((function() local a = {4, 5, nil, 6} return concat(a[0], a[2], a[3], a[99]) end)() == "4,nil,6,nil")
+assert((function() local a = {4, 5, nil, 6} a[0] = 42 a[2] = 0 a[99] = 75 return concat(a[0], a[2], a[74], a[99]) end)() == "42,0,nil,75")
 
 -- load error
 assert((function() return concat(loadstring('hello world')) end)() == "nil,[string \"hello world\"]:1: Incomplete statement: expected assignment or a function call")
@@ -611,27 +611,27 @@ assert((function()
     local res = {}
 
     for i=1,5 do
-        res[#res+1] = (function() return i end)
+        res[#res] = (function() return i end)
     end
 
     local sum = 0
     for i,f in pairs(res) do sum = sum + f() end
 
     return sum
-end)() == 15)
+end)() == 10)
 
 assert((function()
     local res = {}
 
     for i in ipairs({1,2,3,4,5}) do
-        res[#res+1] =(function() return i end)
+        res[#res] =(function() return i end)
     end
 
     local sum = 0
     for i,f in pairs(res) do sum = sum + f() end
 
     return sum
-end)() == 15)
+end)() == 10)
 
 assert((function()
     local res = {}
@@ -639,7 +639,7 @@ assert((function()
     local i = 0
     while i <= 5 do
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         i = i + 1
     end
 
@@ -655,7 +655,7 @@ assert((function()
     local i = 0
     repeat
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         i = i + 1
     until i > 5
 
@@ -670,7 +670,7 @@ assert((function()
     local res = {}
 
     for i=1,10 do
-        res[#res+1] = (function() return i end)
+        res[#res] = (function() return i end)
         if i == 5 then
             break
         end
@@ -686,7 +686,7 @@ assert((function()
     local res = {}
 
     for i in ipairs({1,2,3,4,5,6,7,8,9,10}) do
-        res[#res+1] =(function() return i end)
+        res[#res] =(function() return i end)
         if i == 5 then
             break
         end
@@ -704,7 +704,7 @@ assert((function()
     local i = 0
     while i < 10 do
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         if i == 5 then
             break
         end
@@ -723,7 +723,7 @@ assert((function()
     local i = 0
     repeat
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         if i == 5 then
             break
         end
@@ -738,7 +738,7 @@ end)() == 15)
 
 -- ipairs will not iterate through hash part
 assert((function()
-    local arr = { [1] = 1, [42] = 42, x = 10 }
+    local arr = { [0] = 1, [42] = 42, x = 10 }
     local sum = 0
     for i,v in ipairs(arr) do
     sum = sum + v
@@ -752,7 +752,7 @@ local function chainTest(n)
      local last = nil
 
      -- Build chain of n equality constraints
-     for i = 0, n do
+     for i = 0, n + 1 do
             local name = "v" .. i;
             if i == 0 then first = name end
             if i == n then last = name end
@@ -841,7 +841,7 @@ assert(concat(pcall(function() return math.abs({}) end)):match("invalid argument
 assert(select('#', table.unpack({1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1})) == 263)
 
 -- basic continue in for/while/repeat loops
-assert((function() local a = 1 for i=1,8 do a = a + 1 if a < 5 then continue end a = a * 2 end return a end)() == 190)
+assert((function() local a = 1 for i=1,8 do a = a + 1 if a < 5 then continue end a = a * 2 end return a end)() == 94)
 assert((function() local a = 1 while a < 100 do a = a + 1 if a < 5 then continue end a = a * 2 end return a end)() == 190)
 assert((function() local a = 1 repeat a = a + 1 if a < 5 then continue end a = a * 2 until a > 100 return a end)() == 190)
 
@@ -850,7 +850,7 @@ assert((function()
     local res = {}
 
     for i=1,10 do
-        res[#res+1] = (function() return i end)
+        res[#res] = (function() return i end)
         if i == 5 then
             continue
         end
@@ -861,13 +861,13 @@ assert((function()
     for i,f in pairs(res) do sum = sum + f() end
 
     return sum
-end)() == 105)
+end)() == 85)
 
 assert((function()
     local res = {}
 
     for i in ipairs({1,2,3,4,5,6,7,8,9,10}) do
-        res[#res+1] =(function() return i end)
+        res[#res] =(function() return i end)
         if i == 5 then
             continue
         end
@@ -878,7 +878,7 @@ assert((function()
     for i,f in pairs(res) do sum = sum + f() end
 
     return sum
-end)() == 105)
+end)() == 85)
 
 assert((function()
     local res = {}
@@ -886,7 +886,7 @@ assert((function()
     local i = 1
     while i <= 10 do
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         if i == 5 then
             i = i + 1
             continue
@@ -907,7 +907,7 @@ assert((function()
     local i = 1
     repeat
         local j = i
-        res[#res+1] = (function() return j end)
+        res[#res] = (function() return j end)
         if i == 5 then
             i = i + 1
             continue
@@ -925,8 +925,8 @@ end)() == 105)
 -- shrinking array part
 assert((function()
     local t = table.create(100, 42)
-    for i=1,90 do t[i] = nil end
-    t[101] = 42
+    for i=0,90 do t[i] = nil end
+    t[100] = 42
     local sum = 0
     for _,v in ipairs(t) do sum += v end
     for _,v in pairs(t) do sum += v end
@@ -948,11 +948,11 @@ assert((function()
     a += 5
     b -= a
     c.value *= 3
-    d[1] /= b
+    d[0] /= b
     e %= 2
     f ^= 4
 
-    return concat(a,b,c.value,d[1],e,f)
+    return concat(a,b,c.value,d[0],e,f)
 end)() == "6,-4,9,-1,1,16")
 
 -- compound concat
@@ -971,9 +971,9 @@ assert((function()
     local res = { 1, 2, 3 }
     local count = 0
 
-    res[(function() count += 1 return count end)()] += 5
-    res[(function() count += 1 return count end)()] += 6
-    res[(function() count += 1 return count end)()] += 7
+    res[(function() count += 1 return count - 1 end)()] += 5
+    res[(function() count += 1 return count - 1 end)()] += 6
+    res[(function() count += 1 return count - 1 end)()] += 7
 
     return table.concat(res, ',')
 end)() == "6,8,10")
@@ -991,7 +991,7 @@ assert((function(b)
     end
 
     return res
-end)(true) == 5050)
+end)(true) == 4950)
 
 -- typeof and type require an argument
 assert(pcall(typeof) == false)

@@ -47,10 +47,10 @@ assert(string.len(b) == 960)
 prog = [=[
 print('+')
 
-a1 = [["isto e' um string com várias 'aspas'"]]
+a1 = "\"isto e' um string com v\225rias 'aspas'\""
 a2 = "'aspas'"
 
-assert(string.find(a1, a2) == 31)
+assert(string.find(a1, a2) == 30)
 print('+')
 
 a1 = [==[temp = [[um valor qualquer]]; ]==]
@@ -86,7 +86,7 @@ a = [[00123456789012345678901234567890123456789123456789012345678901234567890123
 00123456789012345678901234567890123456789123456789012345678901234567890123456789
 ]]
 assert(string.len(a) == 1863)
-assert(string.sub(a, 1, 40) == string.sub(b, 1, 40))
+assert(string.sub(a, 0, 40) == string.sub(b, 0, 40))
 x = 1
 ]=]
 

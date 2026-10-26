@@ -177,7 +177,7 @@ TEST_CASE_FIXTURE(Fixture, "length_of_error_type_does_not_produce_an_error")
 TEST_CASE_FIXTURE(Fixture, "indexing_error_type_does_not_produce_an_error")
 {
     CheckResult result = check(R"(
-        local originalReward = unknown.Parent.Reward:GetChildren()[1]
+        local originalReward = unknown.Parent.Reward:GetChildren()[0]
     )");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);

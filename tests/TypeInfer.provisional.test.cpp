@@ -115,7 +115,7 @@ return function<T, U>(t: Array<T>, callback: callbackFn<T> | callbackFnWithThisA
 	local len = #t
 	local res = {}
 	if thisArg == nil then
-		for i = 1, len do
+		for i = 0, len do
 			local kValue = t[i]
 			if kValue ~= nil then
 				if (callback :: callbackFn<T>)(kValue, i, t) then
@@ -167,7 +167,7 @@ TEST_CASE_FIXTURE(Fixture, "weirditer_should_not_loop_forever")
     CheckResult result = check(R"(
         local function toVertexList(vertices, x, y, ...)
             if not (x and y) then return vertices end  -- no more arguments
-            vertices[#vertices + 1] = {x = x, y = y}   -- set vertex
+            vertices[#vertices] = {x = x, y = y}       -- set vertex
             return toVertexList(vertices, ...)         -- recurse
         end
     )");
@@ -1240,7 +1240,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "update_phonemes_minimized")
     CheckResult result = check(R"(
         local video
         function(response)
-            for index = 1, #response do
+            for index = 0, #response do
                 video = video
             end
             return video

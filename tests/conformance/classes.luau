@@ -12,7 +12,7 @@ local function expectfail(s, expected, f)
     -- We have pass true for the last argument to string.find to disable pattern matching, since error messages
     -- can have characters in them that would be interpreted as patterns, and we want to match the error message exactly.
     -- e.g. parens in error messages can be interpreted as pattern groups
-    assert(string.find(actual, expected, 1, true), `{s} expected:\n\t{expected}\nActual:\n\t{actual}`)
+    assert(string.find(actual, expected, 0, true), `{s} expected:\n\t{expected}\nActual:\n\t{actual}`)
     print(`ok: {s}`)
 end
 
@@ -367,10 +367,10 @@ expectpass("classes can be sorted", function()
     local e4 = Entry.new({ tier = "B", ordering = 1 })
     local entries = { e1, e2, e3, e4 }
     table.sort(entries)
-    assert(entries[1] == e2)
-    assert(entries[2] == e3)
-    assert(entries[3] == e1)
-    assert(entries[4] == e4)
+    assert(entries[0] == e2)
+    assert(entries[1] == e3)
+    assert(entries[2] == e1)
+    assert(entries[3] == e4)
 end)
 
 @native
@@ -456,11 +456,11 @@ expectpass("instance properties survive GC during __index construction", functio
 
     for iter = 1, 100 do
         local v = GCBarrierTest.new(poison)
-        assert(type(v.a1) == "table" and v.a1[1] == "a1")
-        assert(type(v.b2) == "table" and v.b2[1] == "b2")
-        assert(type(v.c3) == "table" and v.c3[1] == "c3")
-        assert(type(v.d4) == "table" and v.d4[1] == "d4")
-        assert(type(v.e5) == "table" and v.e5[1] == "e5")
+        assert(type(v.a1) == "table" and v.a1[0] == "a1")
+        assert(type(v.b2) == "table" and v.b2[0] == "b2")
+        assert(type(v.c3) == "table" and v.c3[0] == "c3")
+        assert(type(v.d4) == "table" and v.d4[0] == "d4")
+        assert(type(v.e5) == "table" and v.e5[0] == "e5")
     end
 end)
 
@@ -573,7 +573,7 @@ expectpass("hoisting: mutually referential classes work via capture by ref", fun
     assert(class.isinstance(c, Child))
     assert(c.parent == p)
     assert(#p.children == 1)
-    assert(p.children[1] == c)
+    assert(p.children[0] == c)
 
     local p2 = c:createParent()
     assert(class.isinstance(p2, Parent))

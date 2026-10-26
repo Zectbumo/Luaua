@@ -26,6 +26,51 @@ LUAU_FASTFLAG(LuauNewTypePathErrorMessages)
 
 TEST_SUITE_BEGIN("UserDefinedTypeFunctionTests");
 
+TEST_CASE_FIXTURE(BuiltinsFixture, "luaua_zero_based_runtime_lists")
+{
+    ScopedFastFlag newSolver{FFlag::DebugLuauForceOldSolver, false};
+
+    CheckResult result = check(R"(
+        type function zeroBasedLists()
+            local constructed = {"a", "b"}
+            assert(constructed[0] == "a")
+            assert(constructed[1] == "b")
+            assert(constructed[2] == nil)
+            assert(#constructed == 2)
+
+            local generator, state, control = ipairs({[0] = "a"})
+            local first = generator(state, control)
+            assert(first == 0)
+
+            local components = types.unionof(types.string, types.number):components()
+            assert(components[0] ~= nil)
+            assert(components[1] ~= nil)
+            assert(components[2] == nil)
+
+            local generic = types.generic("T")
+            local fn = types.newfunction(
+                {head = {[0] = types.string, [1] = types.number}},
+                {head = {[0] = types.boolean}},
+                {[0] = generic}
+            )
+
+            local parameters = fn:parameters().head
+            local returns = fn:returns().head
+            local generics = fn:generics()
+            assert(parameters ~= nil and parameters[0] == types.string and parameters[1] == types.number and parameters[2] == nil)
+            assert(returns ~= nil and returns[0] == types.boolean and returns[1] == nil)
+            assert(generics[0] == generic and generics[1] == nil)
+
+            return types.boolean
+        end
+
+        type Result = zeroBasedLists<>
+        local function ok(value: Result): boolean return value end
+    )");
+
+    LUAU_REQUIRE_NO_ERRORS(result);
+}
+
 TEST_CASE_FIXTURE(BuiltinsFixture, "udtf_nil_serialization_works")
 {
     ScopedFastFlag newSolver{FFlag::DebugLuauForceOldSolver, false};
@@ -1389,7 +1434,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "udtf_recursion_and_gc")
                 tbl:setproperty(types.singleton(`m{count}`), types.string)
                 foo(tbl)
             end
-            for i = 1,100 do table.create(10000) end
+            for i = 0,100 do table.create(10000) end
             return tbl
         end
         type Test = {}
@@ -1868,7 +1913,7 @@ TEST_CASE_FIXTURE(ExternTypeFixture, "udtf_generic_api_1")
     CheckResult result = check(R"(
 type function pass(arg)
     local generics = arg:generics()
-    local T = generics[1]
+    local T = generics[0]
     return types.newfunction({ head = {T} }, { head = {T} }, {T})
 end
 
@@ -1887,7 +1932,7 @@ TEST_CASE_FIXTURE(ExternTypeFixture, "udtf_generic_api_2")
     CheckResult result = check(R"(
 type function pass(arg)
     local generics = arg:generics()
-    local T = generics[1]
+    local T = generics[0]
     local f = types.newfunction()
     f:setparameters({T, T});
     f:setreturns({T});
@@ -1982,7 +2027,7 @@ TEST_CASE_FIXTURE(ExternTypeFixture, "udtf_generic_api_6")
     CheckResult result = check(R"(
 type function pass(arg)
     local generics = arg:generics()
-    local T, U = generics[1], generics[2]
+    local T, U = generics[0], generics[1]
     local f = types.newfunction()
     f:setparameters({T});
     f:setreturns({U});
@@ -2194,8 +2239,8 @@ TEST_CASE_FIXTURE(ExternTypeFixture, "udtf_variadic_api")
 type function pass(arg)
     local p, r = arg:parameters(), arg:returns()
     local f = types.newfunction()
-    f:setparameters({p.tail}, p.head[1]);
-    f:setreturns({r.tail}, r.head[1]);
+    f:setparameters({p.tail}, p.head[0]);
+    f:setreturns({r.tail}, r.head[0]);
     return f
 end
 
@@ -3203,7 +3248,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "udtf_areequal_stack_overflow_on_deep_types")
             local depth = 200
             local function build()
                 local t = types.newtable()
-                for i = 1, depth do
+                for i = 0, depth do
                     local outer = types.newtable()
                     outer:setproperty(types.singleton("x"), t)
                     t = outer

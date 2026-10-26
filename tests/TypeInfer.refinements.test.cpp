@@ -537,9 +537,9 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "impossible_type_narrow_is_not_an_error")
     // For instance, getting a value out of the indexer and checking whether the value exists is not an error.
     CheckResult result = check(R"(
         local t: {string} = {"a", "b", "c"}
-        local v = t[4]
+        local v = t[3]
         if not v then
-            t[4] = "d"
+            t[3] = "d"
         else
             print(v)
         end
@@ -735,7 +735,7 @@ TEST_CASE_FIXTURE(Fixture, "string_not_equal_to_string_or_nil")
     CheckResult result = check(R"(
         local t: {string} = {"hello"}
 
-        local a: string = t[1]
+        local a: string = t[0]
         local b: string? = nil
         if a ~= b then
             local foo, bar = a, b
@@ -795,7 +795,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "nonoptional_type_can_narrow_to_nil_if_sense_
 
     CheckResult result = check(R"(
         local t = {"hello"}
-        local v = t[2]
+        local v = t[1]
         if type(v) == "nil" then
             local foo = v
         else
@@ -1230,7 +1230,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "correctly_lookup_a_shadowed_local_that_which
         local foo: string? = "hi"
         assert(foo)
         local foo: number = 5
-        print(foo:sub(1, 1))
+        print(foo:sub(0, 1))
     )");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);
@@ -1819,7 +1819,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "falsiness_of_TruthyPredicate_narrows_into_ni
 {
     CheckResult result = check(R"(
         local function f(t: {number})
-            local x = t[1]
+            local x = t[0]
             if not x then
                 local foo = x
             else
@@ -2076,8 +2076,8 @@ TEST_CASE_FIXTURE(Fixture, "fail_to_refine_a_property_of_subscript_expression")
     CheckResult result = check(R"(
         type Foo = { foo: number? }
         local function f(t: {Foo})
-            if t[1].foo then
-                local foo = t[1].foo
+            if t[0].foo then
+                local foo = t[0].foo
             end
         end
     )");
@@ -2236,8 +2236,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "luau_polyfill_isindexkey_refine_conjunction"
     CheckResult result = check(R"(
         local function isIndexKey(k, contiguousLength)
             return type(k) == "number"
-                and k <= contiguousLength -- nothing out of bounds
-                and 1 <= k -- nothing illegal for array indices
+                and k < contiguousLength -- nothing out of bounds
+                and 0 <= k -- nothing illegal for array indices
                 and math.floor(k) == k -- no float keys
         end
     )");
@@ -2268,8 +2268,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "luau_polyfill_isindexkey_refine_conjunction_
     CheckResult result = check(R"(
         local function isIndexKey(k, contiguousLength: number)
             return type(k) == "number"
-                and k <= contiguousLength -- nothing out of bounds
-                and 1 <= k -- nothing illegal for array indices
+                and k < contiguousLength -- nothing out of bounds
+                and 0 <= k -- nothing illegal for array indices
                 and math.floor(k) == k -- no float keys
         end
     )");
@@ -2783,17 +2783,17 @@ TEST_CASE_FIXTURE(Fixture, "limit_complexity_of_arithmetic_type_functions" * doc
         local Hermite = {}
 
         function Hermite:__init(p0, p1, m0, m1)
-            self[1] = {
+            self[0] = {
                 p0.x;
                 p0.y;
                 p0.z;
             }
-            self[2] = {
+            self[1] = {
                 m0.x;
                 m0.y;
                 m0.z;
             }
-            self[3] = {
+            self[2] = {
                 3*(p1.x - p0.x) - 2*m0.x - m1.x;
                 3*(p1.y - p0.y) - 2*m0.y - m1.y;
                 3*(p1.z - p0.z) - 2*m0.z - m1.z;
@@ -2871,11 +2871,11 @@ TEST_CASE_FIXTURE(Fixture, "cli_120460_table_access_on_phi_node")
         local function foo(bar: string): string
             local baz: boolean = true
             if baz then
-                local _ = (bar:sub(1))
+                local _ = (bar:sub(0))
             else
-                local _ = (bar:sub(1))
+                local _ = (bar:sub(0))
             end
-            return bar:sub(2) -- previously this would be `...never`
+            return bar:sub(1) -- previously this would be `...never`
         end
     )"));
 }
@@ -3258,7 +3258,7 @@ TEST_CASE_FIXTURE(Fixture, "cli_181894_refinement_cancelled_by_for_loop")
 
         local closestChanger: LightingChanger?
         if #lightingChangers == 1 then
-            closestChanger = lightingChangers[1]
+            closestChanger = lightingChangers[0]
         end
         if closestChanger == nil then
             return

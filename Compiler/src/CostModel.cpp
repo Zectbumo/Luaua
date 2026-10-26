@@ -457,10 +457,23 @@ int getTripCount(double from, double to, double step)
     if (fromi == INT_MIN || toi == INT_MIN || stepi == INT_MIN || stepi == 0)
         return -1;
 
-    if ((stepi < 0 && toi > fromi) || (stepi > 0 && toi < fromi))
-        return 0;
+    if (stepi > 0)
+    {
+        if (fromi >= toi)
+            return 0;
 
-    return (toi - fromi) / stepi + 1;
+        int64_t count = (int64_t(toi) - int64_t(fromi) + int64_t(stepi) - 1) / int64_t(stepi);
+        return count <= INT_MAX ? int(count) : -1;
+    }
+    else
+    {
+        if (fromi <= toi)
+            return 0;
+
+        int64_t magnitude = -int64_t(stepi);
+        int64_t count = (int64_t(fromi) - int64_t(toi) + magnitude - 1) / magnitude;
+        return count <= INT_MAX ? int(count) : -1;
+    }
 }
 
 } // namespace Compile

@@ -854,8 +854,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "and_binexps_dont_unify")
     LUAU_REQUIRE_NO_ERRORS(check(R"(
         --!strict
         local t = {}
-        while true and t[1] do
-            print(t[1].test)
+        while true and t[0] do
+            print(t[0].test)
         end
     )"));
 }
@@ -1452,7 +1452,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "luau_polyfill_is_array_simplified")
         if typeof(value) ~= "number" then
            return false
         end
-        if value % 1 ~= 0 or value < 1 then
+        if value % 1 ~= 0 or value < 0 then
            return false
         end
         return true
@@ -1487,14 +1487,14 @@ return function(value: any): boolean
         if typeof(key) ~= "number" then
             return false
         end
-        if key % 1 ~= 0 or key < 1 then
+        if key % 1 ~= 0 or key < 0 then
             return false
         end
         count += 1
         sum += key
     end
 
-    return sum == (count * (count + 1) / 2)
+    return sum == (count * (count - 1) / 2)
 end
     )");
 
@@ -1512,18 +1512,19 @@ local function slice(str: string, startIndexStr: string | number, lastIndexStr: 
     local startIndex = tonumber(startIndexStr)
 
 
-	-- if no last index length set, go to str length + 1
-	local lastIndex = strLen + 1
+	-- if no last index length set, go to the end boundary
+	local lastIndex = strLen
 
 	assert(typeof(lastIndex) == "number", "lastIndexStr should convert to number")
 
 	if lastIndex > strLen then
-		lastIndex = strLen + 1
+		lastIndex = strLen
 	end
 
 	local startIndexByte = utf8.offset(str, startIndex)
+	assert(startIndexByte ~= nil, "startIndex is outside the string")
 
-	return string.sub(str, startIndexByte, startIndexByte)
+	return string.sub(str, startIndexByte, startIndexByte + 1)
 end
 
 return slice
@@ -1542,8 +1543,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "luau-polyfill.Array.startswith")
 local function startsWith(value: string, substring: string, position: number?): boolean
 	-- Luau FIXME: we have to use a tmp variable, as Luau doesn't understand the logic below narrow position to `number`
 	local position_
-	if position == nil or position < 1 then
-		position_ = 1
+	if position == nil or position < 0 then
+		position_ = 0
 	else
 		position_ = position
 	end

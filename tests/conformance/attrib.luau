@@ -10,21 +10,21 @@ a, b = 1, 2+3
 assert(a==1 and b==5)
 a={}
 function f() return 10, 11, 12 end
-a.x, b, a[1] = 1, 2, f()
-assert(a.x==1 and b==2 and a[1]==10)
+a.x, b, a[0] = 1, 2, f()
+assert(a.x==1 and b==2 and a[0]==10)
 a[f()], b, a[f()+3] = f(), a, 'x'
 assert(a[10] == 10 and b == a and a[13] == 'x')
 
 do
-  local f = function (n) local x = {}; for i=1,n do x[i]=i end;
+  local f = function (n) local x = {}; for i=0,n do x[i]=i end;
                          return unpack(x) end;
   local a,b,c
   a,b = 0, f(1)
-  assert(a == 0 and b == 1)
+  assert(a == 0 and b == 0)
   A,b = 0, f(1)
-  assert(A == 0 and b == 1)
+  assert(A == 0 and b == 0)
   a,b,c = 0,5,f(4)
-  assert(a==0 and b==5 and c==1)
+  assert(a==0 and b==5 and c==0)
   a,b,c = 0,5,f(0)
   assert(a==0 and b==5 and c==nil)
 end
@@ -69,6 +69,7 @@ function f(a) return a end
 
 local a = {}
 for i=3000,-3000,-1 do a[i] = i; end
+assert(a[3000] == 3000 and a[-2999] == -2999 and a[-3000] == nil)
 a[10e30] = "alo"; a[true] = 10; a[false] = 20
 assert(a[10e30] == 'alo' and a[not 1] == 20 and a[10<20] == 10)
 for i=3000,-3000,-1 do assert(a[i] == i); end
@@ -81,9 +82,9 @@ a = nil
 
 a = {10,9,8,7,6,5,4,3,2; [-3]='a', [f]=print, a='a', b='ab'}
 a, a.x, a.y = a, a[-3]
-assert(a[1]==10 and a[-3]==a.a and a[f]==print and a.x=='a' and not a.y)
-a[1], f(a)[2], b, c = {['alo']=assert}, 10, a[1], a[f], 6, 10, 23, f(a), 2
-a[1].alo(a[2]==10 and b==10 and c==print)
+assert(a[0]==10 and a[-3]==a.a and a[f]==print and a.x=='a' and not a.y)
+a[0], f(a)[1], b, c = {['alo']=assert}, 10, a[0], a[f], 6, 10, 23, f(a), 2
+a[0].alo(a[1]==10 and b==10 and c==print)
 
 a[2^31] = 10; a[2^31+1] = 11; a[-2^31] = 12;
 a[2^32] = 13; a[-2^32] = 14; a[2^32+1] = 15; a[10^33] = 16;
@@ -97,10 +98,10 @@ a = nil
 
 do
   local a,i,j,b
-  a = {'a', 'b'}; i=1; j=2; b=a
-  i, a[i], a, j, a[j], a[i+j] = j, i, i, b, j, i
-  assert(i == 2 and b[1] == 1 and a == 1 and j == b and b[2] == 2 and
-         b[3] == 1)
+  a = {'a', 'b'}; i=0; j=1; b=a
+  i, a[i], a, j, a[j], a[i+j+1] = j, i, i, b, j, i
+  assert(i == 1 and b[0] == 0 and a == 0 and j == b and b[1] == 1 and
+         b[2] == 0)
 end
 
 return('OK')

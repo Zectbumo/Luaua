@@ -149,7 +149,7 @@ end
 -- note: our earlier test only really checks the low hash bit, so in absence of perfect avalanche it's insufficient
 do
 	local larget = {}
-	for i = 1, 2^14 do
+	for i = 1, 2^14 + 1 do
 	    larget[vector.create(0, 0, i)] = true
 	end
 

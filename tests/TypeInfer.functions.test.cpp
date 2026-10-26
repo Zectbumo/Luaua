@@ -208,7 +208,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "vararg_function_is_quantified")
         function T.f(...)
             local result = {}
 
-            for i = 1, select("#", ...) do
+            for i = 0, select("#", ...) do
                 local dictionary = select(i, ...)
                 for key, value in pairs(dictionary) do
                     result[key] = value
@@ -697,7 +697,7 @@ TEST_CASE_FIXTURE(Fixture, "higher_order_function_2")
         function bottomupmerge(comp, a, b, left, mid, right)
             local i, j = left, mid
             for k = left, right do
-                if i < mid and (j > right or not comp(a[j], a[i])) then
+                if i < mid and (j >= right or not comp(a[j], a[i])) then
                     b[k] = a[i]
                     i = i + 1
                 else
@@ -762,7 +762,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "higher_order_function_4")
         function bottomupmerge(comp, a, b, left, mid, right)
             local i, j = left, mid
             for k = left, right do
-                if i < mid and (j > right or not comp(a[j], a[i])) then
+                if i < mid and (j >= right or not comp(a[j], a[i])) then
                     b[k] = a[i]
                     i = i + 1
                 else
@@ -774,13 +774,13 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "higher_order_function_4")
 
         function mergesort<T>(arr: {T}, comp: (T, T) -> boolean)
             local work = {}
-            for i = 1, #arr do
+            for i = 0, #arr do
                 work[i] = arr[i]
             end
             local width = 1
             while width < #arr do
-                for i = 1, #arr, 2*width do
-                    bottomupmerge(comp, arr, work, i, math.min(i+width, #arr), math.min(i+2*width-1, #arr))
+                for i = 0, #arr, 2*width do
+                    bottomupmerge(comp, arr, work, i, math.min(i+width, #arr), math.min(i+2*width, #arr))
                 end
                 local temp = work
                 work = arr
@@ -1288,7 +1288,7 @@ f(function(a: number, b, c) return c and a + b or b - a end)
     result = check(R"(
 type Table = { x: number, y: number }
 local function f(a: (Table) -> number) return a({x = 1, y = 2}) end
-f(function(...) return select(1, ...).z end)
+f(function(...) return select(0, ...).z end)
     )");
 
     LUAU_REQUIRE_ERRORS(result);
@@ -3250,14 +3250,14 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "function_calls_should_not_crash")
                 end
                 API.OnInvoke = function()
                     local realEnvResult, isResultPointer = getRealEnvResult(FunctionInEnvToRunPath)
-                    return realEnvResult(table.unpack(args, 2, args.n))
+                    return realEnvResult(table.unpack(args, 1, args.n))
                     if TableInEnvPath and type(TableInEnvPath) == 'string' then
                         local realEnvResult, isResultPointer = getRealEnvResult(TableInEnvPath)
                         return getmetatable(realEnvResult)
                     end
                     local realEnvResult, isResultPointer = getRealEnvResult(TableInEnvPath)
                     local metaTableInEnv = getmetatable(realEnvResult)
-                    local result = metaTableInEnv[FuncToRun](realEnvResult,table.unpack(args, 3, args.n))
+                    local result = metaTableInEnv[FuncToRun](realEnvResult,table.unpack(args, 2, args.n))
                 end
             end
         }
@@ -3710,7 +3710,7 @@ TEST_CASE_FIXTURE(Fixture, "oss_2143")
         fn2(values, function(x: number)
         end)
 
-        local a = values[1]
+        local a = values[0]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -3752,12 +3752,12 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "oss_2109")
             repeat
                 Results = {pcall(Function, ...)}
 
-                if not Results[1] then
+                if not Results[0] then
                     CurrentRetry += 1
                 end
-            until Results[1] or CurrentRetry == MaxRetries
+            until Results[0] or CurrentRetry == MaxRetries
 
-            return unpack(Results :: any, 2)
+            return unpack(Results :: any, 1)
         end
 
         local function Test(a: number, b: number): number
@@ -3893,7 +3893,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "oss_2216_recursive_global_function_works_as_
         function flatten(... : tb_any) : tb_any
             local out = {}
             local par = {...}
-            for i = 1,#par do
+            for i = 0,#par do
                 if par[i] and typeof(par[i]) == "table" then
                     for n,v in par[i] do
                         if typeof(n) == "number" then

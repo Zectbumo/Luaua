@@ -4647,7 +4647,7 @@ TEST_CASE_FIXTURE(ACExternTypeFixture, "ac_dont_overflow_on_recursive_union")
         local table1: {ChildClass} = {}
         local table2 = {}
 
-        for index, value in table2[1] do
+        for index, value in table2[0] do
             table.insert(table1, value)
             value.@1
         end
@@ -4771,7 +4771,7 @@ TEST_CASE_FIXTURE(ACFixture, "autocomplete_in_local_table")
     check(R"(
         type Entry = { field: number, prop: string }
         local x : {Entry} = {}
-        x[1] = {
+        x[0] = {
            f@1,
            p@2,
         }
@@ -4947,7 +4947,7 @@ TEST_CASE_FIXTURE(ACFixture, "autocomplete_exclude_break_continue_outside_loop")
 
 TEST_CASE_FIXTURE(ACFixture, "autocomplete_exclude_break_continue_function_boundary")
 {
-    check(R"(for i = 1, 10 do
+    check(R"(for i = 0, 10 do
     local function helper()
         @1
     end
@@ -4957,6 +4957,22 @@ TEST_CASE_FIXTURE(ACFixture, "autocomplete_exclude_break_continue_function_bound
 
     CHECK_EQ(ac.entryMap.count("break"), 0);
     CHECK_EQ(ac.entryMap.count("continue"), 0);
+}
+
+TEST_CASE_FIXTURE(ACFixture, "zero_based_half_open_numeric_for_completion")
+{
+    check(R"(
+        local items = {"a", "b"}
+        for i = 0, #items do
+            local value = items[i]
+            @1
+        end
+    )");
+
+    auto ac = autocomplete('1');
+    CHECK(ac.entryMap.count("items") > 0);
+    CHECK(ac.entryMap.count("i") > 0);
+    CHECK(ac.entryMap.count("value") > 0);
 }
 
 TEST_CASE_FIXTURE(ACFixture, "autocomplete_exclude_break_continue_in_param")

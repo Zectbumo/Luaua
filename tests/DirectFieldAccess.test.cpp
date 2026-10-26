@@ -155,7 +155,7 @@ TEST_CASE("repeated_access_handler_called_every_iteration")
     int status = runCode(L, R"(
         local v = createVec2(7, 0)
         local sum = 0
-        for i = 1, 5 do
+        for i = 1, 6 do
             sum = sum + v.X
         end
         return sum
@@ -210,7 +210,7 @@ TEST_CASE("unregistered_tag_falls_through_to_index_metamethod")
         local uds = {createVec2(1, 0), createOther()}
         local results = {}
         for _, v in uds do
-            results[#results + 1] = v.X
+            results[#results] = v.X
         end
         return table.unpack(results)
     )");

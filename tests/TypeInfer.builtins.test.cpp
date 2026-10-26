@@ -99,7 +99,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "table_dot_remove_optionally_returns_generic"
 {
     CheckResult result = check(R"(
         local t = { 1 }
-        local n = table.remove(t, 7)
+        local n = table.remove(t, 6)
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -109,7 +109,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "table_dot_remove_optionally_returns_generic"
 TEST_CASE_FIXTURE(BuiltinsFixture, "table_concat_returns_string")
 {
     CheckResult result = check(R"(
-        local r = table.concat({1,2,3,4}, ",", 2);
+        local r = table.concat({1,2,3,4}, ",", 1);
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -230,10 +230,10 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "lua_51_exported_globals_all_exist")
         local v_xpcall = xpcall
 
         --local v_package_loadlib = package.loadlib
-        --local v_package_loaders_1_ = package.loaders[1]
-        --local v_package_loaders_2_ = package.loaders[2]
-        --local v_package_loaders_3_ = package.loaders[3]
-        --local v_package_loaders_4_ = package.loaders[4]
+        --local v_package_loaders_1_ = package.loaders[0]
+        --local v_package_loaders_2_ = package.loaders[1]
+        --local v_package_loaders_3_ = package.loaders[2]
+        --local v_package_loaders_4_ = package.loaders[3]
 
         local v_tostring = tostring
         local v_print = print
@@ -398,7 +398,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "table_insert_correctly_infers_type_of_array_
     CheckResult result = check(R"(
         local t = {}
         table.insert(t, "foo")
-        local s = t[1]
+        local s = t[0]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -409,8 +409,8 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "table_insert_correctly_infers_type_of_array_
 {
     CheckResult result = check(R"(
         local t = {}
-        table.insert(t, 1, "foo")
-        local s = t[1]
+        table.insert(t, 0, "foo")
+        local s = t[0]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -687,7 +687,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "pcall_returns_at_least_two_value_but_functio
 TEST_CASE_FIXTURE(BuiltinsFixture, "trivial_select")
 {
     CheckResult result = check(R"(
-        local a:number = select(1, 42)
+        local a:number = select(0, 42)
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -696,7 +696,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "trivial_select")
 TEST_CASE_FIXTURE(BuiltinsFixture, "see_thru_select")
 {
     CheckResult result = check(R"(
-        local a:number, b:boolean = select(2,"hi", 10, true)
+        local a:number, b:boolean = select(1,"hi", 10, true)
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -715,7 +715,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "see_thru_select_count")
 TEST_CASE_FIXTURE(BuiltinsFixture, "select_with_decimal_argument_is_rounded_down")
 {
     CheckResult result = check(R"(
-        local a: number, b: boolean = select(2.9, "foo", 1, true)
+        local a: number, b: boolean = select(1.9, "foo", 1, true)
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -765,32 +765,68 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "bad_select_should_not_crash")
 
 TEST_CASE_FIXTURE(BuiltinsFixture, "select_way_out_of_range")
 {
-    // CLI-115720
-    if (!FFlag::DebugLuauForceOldSolver)
-        return;
+    for (bool oldSolver : {false, true})
+    {
+        ScopedFastFlag solver{FFlag::DebugLuauForceOldSolver, oldSolver};
+        CAPTURE(oldSolver);
 
-    CheckResult result = check(R"(
-        select(5432598430953240958)
-    )");
+        CheckResult result = check(R"(
+            select(5432598430953240958)
+            select(-1e100)
+        )");
 
-    LUAU_REQUIRE_ERROR_COUNT(1, result);
-    REQUIRE(get<GenericError>(result.errors[0]));
-    CHECK_EQ("bad argument #1 to select (index out of range)", toString(result.errors[0]));
+        LUAU_REQUIRE_ERROR_COUNT(2, result);
+        for (const TypeError& error : result.errors)
+        {
+            REQUIRE(get<GenericError>(error));
+            CHECK_EQ("bad argument #1 to select (index out of range)", toString(error));
+        }
+    }
 }
 
 TEST_CASE_FIXTURE(BuiltinsFixture, "select_slightly_out_of_range")
 {
-    // CLI-115720
-    if (!FFlag::DebugLuauForceOldSolver)
-        return;
-
     CheckResult result = check(R"(
         select(3, "a", 1)
     )");
 
-    LUAU_REQUIRE_ERROR_COUNT(1, result);
-    REQUIRE(get<GenericError>(result.errors[0]));
-    CHECK_EQ("bad argument #1 to select (index out of range)", toString(result.errors[0]));
+    LUAU_REQUIRE_NO_ERRORS(result);
+}
+
+TEST_CASE_FIXTURE(BuiltinsFixture, "select_zero_based_bounds_and_negative_offsets")
+{
+    for (bool oldSolver : {false, true})
+    {
+        ScopedFastFlag solver{FFlag::DebugLuauForceOldSolver, oldSolver};
+        CAPTURE(oldSolver);
+
+        CheckResult result = check(R"(
+            local first, second = select(-2, "a", 1)
+            local last = select(-1, "a", 1)
+            select(2, "a", 1)
+            select(20, "a", 1)
+        )");
+
+        LUAU_REQUIRE_NO_ERRORS(result);
+        CHECK_EQ("string", toString(requireType("first")));
+        CHECK_EQ("number", toString(requireType("second")));
+        CHECK_EQ("number", toString(requireType("last")));
+    }
+}
+
+TEST_CASE_FIXTURE(BuiltinsFixture, "select_negative_offset_before_start_is_rejected")
+{
+    for (bool oldSolver : {false, true})
+    {
+        ScopedFastFlag solver{FFlag::DebugLuauForceOldSolver, oldSolver};
+        CAPTURE(oldSolver);
+
+        CheckResult result = check("select(-3, 'a', 1)");
+
+        LUAU_REQUIRE_ERROR_COUNT(1, result);
+        REQUIRE(get<GenericError>(result.errors[0]));
+        CHECK_EQ("bad argument #1 to select (index out of range)", toString(result.errors[0]));
+    }
 }
 
 TEST_CASE_FIXTURE(BuiltinsFixture, "select_with_variadic_typepack_tail")
@@ -801,7 +837,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "select_with_variadic_typepack_tail")
             return ...
         end
 
-        local foo, bar, baz, quux = select(1, f("foo", true))
+        local foo, bar, baz, quux = select(0, f("foo", true))
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -824,7 +860,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "select_with_variadic_typepack_tail_and_strin
             return ...
         end
 
-        local foo, bar, baz, quux = select(1, "foo", f("bar", true))
+        local foo, bar, baz, quux = select(0, "foo", f("bar", true))
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -942,14 +978,14 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "string_lib_self_noself")
 {
     CheckResult result = check(R"(
         --!nonstrict
-        local a1 = string.byte("abcdef", 2)
+        local a1 = string.byte("abcdef", 1)
         local a2 = string.find("abcdef", "def")
         local a3 = string.gmatch("ab ab", "%a+")
         local a4 = string.gsub("abab", "ab", "cd")
         local a5 = string.len("abc")
         local a6 = string.match("12 ab", "%d+ %a+")
         local a7 = string.rep("a", 10)
-        local a8 = string.sub("abcd", 1, 2)
+        local a8 = string.sub("abcd", 0, 2)
         local a9 = string.split("a,b,c", ",")
         local a0 = string.packsize("ff")
     )");
@@ -1175,13 +1211,13 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "table_freeze_is_generic")
 
         local a = tf1.a
         local b = tf2.b
-        local c = tf3[2]
+        local c = tf3[1]
 
         local d = tf1.b
 
         local a2 = t1.a
         local b2 = t2.b
-        local c2 = t3[2]
+        local c2 = t3[1]
     )");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);
@@ -1416,7 +1452,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "global_singleton_types_are_sealed")
     CheckResult result = check(R"(
 local function f(x: string)
     local p = x:split('a')
-    p = table.pack(table.unpack(p, 1, #p - 1))
+    p = table.pack(table.unpack(p, 0, #p - 1))
     return p
 end
     )");
@@ -1633,7 +1669,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "find_capture_types2")
 TEST_CASE_FIXTURE(BuiltinsFixture, "find_capture_types3")
 {
     CheckResult result = check(R"END(
-        local d, e, a, b, c = string.find("This is a string", "(.()(%a+))", 1, "this should be a bool")
+        local d, e, a, b, c = string.find("This is a string", "(.()(%a+))", 0, "this should be a bool")
     )END");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);
@@ -1653,7 +1689,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "find_capture_types3")
 TEST_CASE_FIXTURE(BuiltinsFixture, "find_capture_types3")
 {
     CheckResult result = check(R"END(
-        local d, e, a, b = string.find("This is a string", "(.()(%a+))", 1, true)
+        local d, e, a, b = string.find("This is a string", "(.()(%a+))", 0, true)
     )END");
 
     LUAU_REQUIRE_ERROR_COUNT(1, result);

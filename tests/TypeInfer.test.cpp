@@ -730,7 +730,7 @@ TEST_CASE_FIXTURE(Fixture, "cli_39932_use_unifier_in_ensure_methods")
 {
     CheckResult result = check(R"(
         local x: {number|number} = {1, 2, 3}
-        local y = x[1] - x[2]
+        local y = x[0] - x[1]
     )");
 
     LUAU_REQUIRE_NO_ERRORS(result);
@@ -1415,7 +1415,7 @@ TEST_CASE_FIXTURE(Fixture, "dcr_delays_expansion_of_function_containing_blocked_
             local a = b[1] or 'Cn'
             local c = x[1]
 
-            if a:sub(1, #c) == c then
+            if a:sub(0, #c) == c then
             end
         end
     )");
@@ -2254,9 +2254,9 @@ else
 end
 
 for i, v in ipairs(outln)do
-    if type(v) == 'table' and (v[1] == 40 or v[1] == 'quantifier' and type(v[5]) == 'table' and v[5][1] == 40)then
-        v = v[5]
-    elseif type(v) == 'table' and (v[1] == 'backref' or v[1] == 'recurmatch')then
+    if type(v) == 'table' and (v[0] == 40 or v[0] == 'quantifier' and type(v[4]) == 'table' and v[4][0] == 40)then
+        v = v[4]
+    elseif type(v) == 'table' and (v[0] == 'backref' or v[0] == 'recurmatch')then
         for i1, v1 in ipairs(outln)do
             break
         end

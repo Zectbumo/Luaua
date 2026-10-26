@@ -1,6 +1,7 @@
 // This file is part of the Luau programming language and is licensed under MIT License; see LICENSE.txt for details
 #include "Luau/Compiler.h"
 #include "Luau/BytecodeBuilder.h"
+#include "Luau/Bytecode.h"
 #include "Luau/StringUtils.h"
 
 #include "ScopedFlags.h"
@@ -239,6 +240,18 @@ TEST_CASE("BytecodeIsStable")
     // Bytecode type encoding (serialized & in-memory)
     // Note: these *can* change retroactively *if* type version is bumped, but probably shouldn't
     LUAU_ASSERT(LBC_TYPE_BUFFER == 9); // type version 1
+}
+
+TEST_CASE("LuauaBytecodeMarker")
+{
+    std::string bytecode = Luau::compile("return 42");
+    REQUIRE(bytecode.size() >= 2);
+    CHECK_EQ(uint8_t(bytecode[0]), uint8_t(LBC_BYTECODE_MARKER));
+    CHECK_EQ(uint8_t(bytecode[1]), Luau::BytecodeBuilder::getVersion());
+
+    std::string error = Luau::compile("local =");
+    REQUIRE(!error.empty());
+    CHECK_EQ(uint8_t(error[0]), uint8_t(0));
 }
 
 TEST_CASE("CompileToBytecode")
@@ -859,10 +872,10 @@ NEWTABLE R0 4 0
 LOADN R1 2
 SETTABLEN R1 R0 2
 LOADN R1 256
-SETTABLEN R1 R0 256
-LOADN R1 0
-LOADN R2 0
+LOADN R2 256
 SETTABLE R2 R0 R1
+LOADN R1 0
+SETTABLEN R1 R0 0
 LOADN R1 257
 LOADN R2 257
 SETTABLE R2 R0 R1
@@ -870,21 +883,20 @@ RETURN R0 1
 )");
 
     // tables with [x] where x is sequential compile to correctly sized array + SETTABLEN
-    CHECK_EQ("\n" + compileFunction0("return {[1] = 1, [2] = 2}"), R"(
+    CHECK_EQ("\n" + compileFunction0("return {[0] = 0, [1] = 1}"), R"(
 NEWTABLE R0 0 2
+LOADN R1 0
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
-LOADN R1 2
-SETTABLEN R1 R0 2
 RETURN R0 1
 )");
 
-    // when index chain starts with 0, or isn't sequential, we disable the optimization
+    // when the index chain isn't sequential, we disable the optimization
     CHECK_EQ("\n" + compileFunction0("return {[0] = 0, [1] = 1, [2] = 2, [42] = 42}"), R"(
 NEWTABLE R0 4 0
 LOADN R1 0
-LOADN R2 0
-SETTABLE R2 R0 R1
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
 LOADN R1 2
@@ -907,14 +919,14 @@ RETURN R0 1
 )");
 
     // we can also correctly predict the array length for mixed tables
-    CHECK_EQ("\n" + compileFunction0("return {key = 1, value = 2, [1] = 42}"), R"(
+    CHECK_EQ("\n" + compileFunction0("return {key = 1, value = 2, [0] = 42}"), R"(
 NEWTABLE R0 2 1
 LOADN R1 1
 SETTABLEKS R1 R0 K0 ['key']
 LOADN R1 2
 SETTABLEKS R1 R0 K1 ['value']
 LOADN R1 42
-SETTABLEN R1 R0 1
+SETTABLEN R1 R0 0
 RETURN R0 1
 )");
 }
@@ -1042,15 +1054,15 @@ RETURN R0 1
     // validate that we use SETTABLEN for constant variable keys *and* that we predict array size
     CHECK_EQ(
         "\n" + compileFunction0(R"(
-        local a, b = 1, 2
+        local a, b = 0, 1
         return {[a] = 42, [b] = 0}
 )"),
         R"(
 NEWTABLE R0 0 2
 LOADN R1 42
-SETTABLEN R1 R0 1
+SETTABLEN R1 R0 0
 LOADN R1 0
-SETTABLEN R1 R0 2
+SETTABLEN R1 R0 1
 RETURN R0 1
 )"
     );
@@ -1135,6 +1147,7 @@ RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction0(R"(
 local t = {}
+t[0] = 1
 t[1] = 1
 t[2] = 1
 t[3] = 1
@@ -1144,10 +1157,11 @@ t[6] = 1
 t[7] = 1
 t[8] = 1
 t[9] = 1
-t[10] = 1
 )"),
         R"(
 NEWTABLE R0 0 10
+LOADN R1 1
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
 LOADN R1 1
@@ -1166,8 +1180,6 @@ LOADN R1 1
 SETTABLEN R1 R0 8
 LOADN R1 1
 SETTABLEN R1 R0 9
-LOADN R1 1
-SETTABLEN R1 R0 10
 RETURN R0 0
 )"
     );
@@ -1227,14 +1239,14 @@ TEST_CASE("TableSizePredictionLoop")
     CHECK_EQ(
         "\n" + compileFunction0(R"(
 local t = {}
-for i=1,4 do
+for i=0,4 do
     t[i] = 0
 end
 return t
 )"),
         R"(
 NEWTABLE R0 0 4
-LOADN R3 1
+LOADN R3 0
 LOADN R1 4
 LOADN R2 1
 FORNPREP R1 L1
@@ -2697,7 +2709,7 @@ TEST_CASE("LoopContinueCorrectlyHandlesImplicitConstantAfterUnroll")
     {
         compileFunction(
             R"(
-for i = 1, 2 do
+for i = 1, 3 do
     s()
     repeat
         if i == 2 then
@@ -3209,22 +3221,22 @@ TEST_CASE("ArrayIndexLiteral")
 {
     CHECK_EQ("\n" + compileFunction0("local arr = {} return arr[0], arr[1], arr[256], arr[257]"), R"(
 NEWTABLE R0 0 0
-LOADN R2 0
-GETTABLE R1 R0 R2
+GETTABLEN R1 R0 0
 GETTABLEN R2 R0 1
-GETTABLEN R3 R0 256
+LOADN R4 256
+GETTABLE R3 R0 R4
 LOADN R5 257
 GETTABLE R4 R0 R5
 RETURN R1 4
 )");
 
     CHECK_EQ("\n" + compileFunction0("local arr = {} local b = ... arr[0] = b arr[1] = b arr[256] = b arr[257] = b"), R"(
-NEWTABLE R0 0 1
+NEWTABLE R0 0 2
 GETVARARGS R1 1
-LOADN R2 0
-SETTABLE R1 R0 R2
+SETTABLEN R1 R0 0
 SETTABLEN R1 R0 1
-SETTABLEN R1 R0 256
+LOADN R2 256
+SETTABLE R1 R0 R2
 LOADN R2 257
 SETTABLE R1 R0 R2
 RETURN R0 0
@@ -4122,7 +4134,7 @@ return foo()
         compileWithRemarks(R"(
 local function foo()
     local s = 0
-    for i = 1, 100 do s += i end
+    for i = 1, 101 do s += i end
     return s
 end
 
@@ -4132,7 +4144,7 @@ return foo()
 local function foo()
     local s = 0
     -- remark: loop unroll failed: too many iterations (100)
-    for i = 1, 100 do s += i end
+    for i = 1, 101 do s += i end
     return s
 end
 
@@ -4145,7 +4157,7 @@ return foo()
         compileWithRemarks(R"(
 local function foo()
     local s = 0
-    for i = 1, 4 * 25 do s += i end
+    for i = 1, 4 * 25 + 1 do s += i end
     return s
 end
 
@@ -4155,7 +4167,7 @@ return foo()
 local function foo()
     local s = 0
     -- remark: loop unroll failed: too many iterations (100)
-    for i = 1, 4 * 25 do s += i end
+    for i = 1, 4 * 25 + 1 do s += i end
     return s
 end
 
@@ -4171,7 +4183,7 @@ local function test(a)
     while a < 0 do
         a += 1
     end
-    for i=10,1,-1 do
+    for i=10,0,-1 do
         a += 1
     end
     for i in pairs({}) do
@@ -4194,7 +4206,7 @@ local function test(a)
         a += 1
     end
     -- remark: loop unroll succeeded (iterations 10, cost 10, profit 2.00x)
-    for i=10,1,-1 do
+    for i=10,0,-1 do
         a += 1
     end
     -- remark: allocation: table hash 0
@@ -4453,14 +4465,14 @@ L0: RETURN R0 1
     CHECK_EQ(
         "\n" + compileFunction0(R"(
 local sum = 0
-for i=1, select('#', ...) do
+for i=0, select('#', ...) do
     sum += select(i, ...)
 end
 return sum
 )"),
         R"(
 LOADN R0 0
-LOADN R3 1
+LOADN R3 0
 LOADK R5 K0 ['#']
 FASTCALL1 57 R5 L0
 GETIMPORT R4 2 [select]
@@ -4724,7 +4736,7 @@ RETURN R0 1
                    R"(
 local function foo()
     local t = {}
-    t[1] = 42
+    t[0] = 42
     return function() return t end
 end
 )",
@@ -4733,7 +4745,7 @@ end
         R"(
 NEWTABLE R0 0 1
 LOADN R1 42
-SETTABLEN R1 R0 1
+SETTABLEN R1 R0 0
 NEWCLOSURE R1 P0
 CAPTURE VAL R0
 RETURN R1 1
@@ -6024,7 +6036,7 @@ TEST_CASE("LoopUnrollBasic")
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=1,2 do
+for i=0,2 do
     t[i] = i
 end
 return t
@@ -6034,10 +6046,10 @@ return t
                ),
         R"(
 NEWTABLE R0 0 2
+LOADN R1 0
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
-LOADN R1 2
-SETTABLEN R1 R0 2
 RETURN R0 1
 )"
     );
@@ -6047,7 +6059,7 @@ RETURN R0 1
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=2,1,-1 do
+for i=1,-1,-1 do
     t[i] = i
 end
 return t
@@ -6057,10 +6069,10 @@ return t
                ),
         R"(
 NEWTABLE R0 0 0
-LOADN R1 2
-SETTABLEN R1 R0 2
 LOADN R1 1
 SETTABLEN R1 R0 1
+LOADN R1 0
+SETTABLEN R1 R0 0
 RETURN R0 1
 )"
     );
@@ -6111,9 +6123,9 @@ TEST_CASE("LoopUnrollNested")
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=0,1 do
-    for j=0,1 do
-        t[i*2+(j+1)] = 0
+for i=0,2 do
+    for j=0,2 do
+        t[i*2+j] = 0
     end
 end
 )",
@@ -6123,13 +6135,13 @@ end
         R"(
 NEWTABLE R0 0 0
 LOADN R1 0
+SETTABLEN R1 R0 0
+LOADN R1 0
 SETTABLEN R1 R0 1
 LOADN R1 0
 SETTABLEN R1 R0 2
 LOADN R1 0
 SETTABLEN R1 R0 3
-LOADN R1 0
-SETTABLEN R1 R0 4
 RETURN R0 0
 )"
     );
@@ -6139,9 +6151,9 @@ RETURN R0 0
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=0,3 do
-    for j=0,3 do
-        t[i*4+(j+1)] = 0
+for i=0,4 do
+    for j=0,4 do
+        t[i*4+j] = 0
     end
 end
 )",
@@ -6151,23 +6163,23 @@ end
         R"(
 NEWTABLE R0 0 0
 LOADN R3 0
-LOADN R1 3
+LOADN R1 4
 LOADN R2 1
 FORNPREP R1 L1
 L0: MULK R5 R3 K1 [4]
-ADDK R4 R5 K0 [1]
+ADDK R4 R5 K0 [0]
 LOADN R5 0
 SETTABLE R5 R0 R4
 MULK R5 R3 K1 [4]
-ADDK R4 R5 K2 [2]
+ADDK R4 R5 K2 [1]
 LOADN R5 0
 SETTABLE R5 R0 R4
 MULK R5 R3 K1 [4]
-ADDK R4 R5 K3 [3]
+ADDK R4 R5 K3 [2]
 LOADN R5 0
 SETTABLE R5 R0 R4
 MULK R5 R3 K1 [4]
-ADDK R4 R5 K1 [4]
+ADDK R4 R5 K4 [3]
 LOADN R5 0
 SETTABLE R5 R0 R4
 FORNLOOP R1 L0
@@ -6180,9 +6192,9 @@ L1: RETURN R0 0
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=0,1 do
-    for j=0,i do
-        t[i*2+(j+1)] = 0
+for i=0,2 do
+    for j=0,i+1 do
+        t[i*2+j] = 0
     end
 end
 )",
@@ -6192,11 +6204,11 @@ end
         R"(
 NEWTABLE R0 0 0
 LOADN R1 0
-SETTABLEN R1 R0 1
+SETTABLEN R1 R0 0
+LOADN R1 0
+SETTABLEN R1 R0 2
 LOADN R1 0
 SETTABLEN R1 R0 3
-LOADN R1 0
-SETTABLEN R1 R0 4
 RETURN R0 0
 )"
     );
@@ -6296,7 +6308,7 @@ TEST_CASE("LoopUnrollControlFlow")
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,3 do
+for i=1,4 do
     if math.random() < 0.5 then
         break
     end
@@ -6326,7 +6338,7 @@ L0: RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,3 do
+for i=1,4 do
     if math.random() < 0.5 then
         continue
     end
@@ -6366,7 +6378,7 @@ L2: RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,1 do
+for i=1,2 do
     local j = global(i)
     print(function() return j end)
     if math.random() < 0.5 then
@@ -6402,8 +6414,8 @@ RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,1 do
-    for j=1,1 do
+for i=1,2 do
+    for j=1,2 do
         if i == 1 then
             continue
         else
@@ -6428,7 +6440,7 @@ TEST_CASE("LoopUnrollNestedClosure")
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,2 do
+for i=1,3 do
     local x = function() return i end
 end
 )",
@@ -6459,7 +6471,7 @@ TEST_CASE("LoopUnrollCost")
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=1,10 do
+for i=0,10 do
     t[i] = i
 end
 return t
@@ -6469,6 +6481,8 @@ return t
                ),
         R"(
 NEWTABLE R0 0 10
+LOADN R1 0
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
 LOADN R1 2
@@ -6487,8 +6501,6 @@ LOADN R1 8
 SETTABLEN R1 R0 8
 LOADN R1 9
 SETTABLEN R1 R0 9
-LOADN R1 10
-SETTABLEN R1 R0 10
 RETURN R0 1
 )"
     );
@@ -6498,7 +6510,7 @@ RETURN R0 1
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=1,100 do
+for i=0,100 do
     t[i] = i
 end
 return t
@@ -6508,7 +6520,7 @@ return t
                ),
         R"(
 NEWTABLE R0 0 0
-LOADN R3 1
+LOADN R3 0
 LOADN R1 100
 LOADN R2 1
 FORNPREP R1 L1
@@ -6523,7 +6535,7 @@ L1: RETURN R0 1
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=1,25 do
+for i=0,25 do
     t[i] = i * i * i
 end
 return t
@@ -6533,6 +6545,8 @@ return t
                ),
         R"(
 NEWTABLE R0 0 0
+LOADN R1 0
+SETTABLEN R1 R0 0
 LOADN R1 1
 SETTABLEN R1 R0 1
 LOADN R1 8
@@ -6581,8 +6595,6 @@ LOADN R1 12167
 SETTABLEN R1 R0 23
 LOADN R1 13824
 SETTABLEN R1 R0 24
-LOADN R1 15625
-SETTABLEN R1 R0 25
 RETURN R0 1
 )"
     );
@@ -6592,7 +6604,7 @@ RETURN R0 1
         "\n" + compileFunction(
                    R"(
 local t = {}
-for i=1,10 do
+for i=0,10 do
     t[i] = math.abs(math.sin(i))
 end
 return t
@@ -6602,7 +6614,7 @@ return t
                ),
         R"(
 NEWTABLE R0 0 10
-LOADN R3 1
+LOADN R3 0
 LOADN R1 10
 LOADN R2 1
 FORNPREP R1 L3
@@ -6626,7 +6638,7 @@ TEST_CASE("LoopUnrollMutable")
     CHECK_EQ(
         "\n" + compileFunction(
                    R"(
-for i=1,3 do
+for i=1,4 do
     i = 3
     print(i) -- should print 3 three times in a row
 end
@@ -6636,7 +6648,7 @@ end
                ),
         R"(
 LOADN R2 1
-LOADN R0 3
+LOADN R0 4
 LOADN R1 1
 FORNPREP R0 L1
 L0: MOVE R3 R2
@@ -6663,8 +6675,8 @@ TEST_CASE("LoopUnrollCostBuiltins")
         "\n" + compileFunction(
                    R"(
 function cipher(block, nonce)
-    for i = 0,3 do
-        block[i + 1] = bit32.band(bit32.rshift(nonce, i * 8), 0xff)
+    for i = 0,4 do
+        block[i] = bit32.band(bit32.rshift(nonce, i * 8), 0xff)
     end
 end
 )",
@@ -6681,7 +6693,7 @@ L0: FASTCALL2K 29 R3 K4 L1 [255]
 LOADK R4 K4 [255]
 GETIMPORT R2 6 [bit32.band]
 CALL R2 2 1
-L1: SETTABLEN R2 R0 1
+L1: SETTABLEN R2 R0 0
 FASTCALL2K 39 R1 K7 L2 [8]
 MOVE R4 R1
 LOADK R5 K7 [8]
@@ -6691,7 +6703,7 @@ L2: FASTCALL2K 29 R3 K4 L3 [255]
 LOADK R4 K4 [255]
 GETIMPORT R2 6 [bit32.band]
 CALL R2 2 1
-L3: SETTABLEN R2 R0 2
+L3: SETTABLEN R2 R0 1
 FASTCALL2K 39 R1 K8 L4 [16]
 MOVE R4 R1
 LOADK R5 K8 [16]
@@ -6701,7 +6713,7 @@ L4: FASTCALL2K 29 R3 K4 L5 [255]
 LOADK R4 K4 [255]
 GETIMPORT R2 6 [bit32.band]
 CALL R2 2 1
-L5: SETTABLEN R2 R0 3
+L5: SETTABLEN R2 R0 2
 FASTCALL2K 39 R1 K9 L6 [24]
 MOVE R4 R1
 LOADK R5 K9 [24]
@@ -6711,7 +6723,7 @@ L6: FASTCALL2K 29 R3 K4 L7 [255]
 LOADK R4 K4 [255]
 GETIMPORT R2 6 [bit32.band]
 CALL R2 2 1
-L7: SETTABLEN R2 R0 4
+L7: SETTABLEN R2 R0 3
 RETURN R0 0
 )"
     );
@@ -6723,8 +6735,8 @@ RETURN R0 0
 bit32 = {}
 
 function cipher(block, nonce)
-    for i = 0,3 do
-        block[i + 1] = bit32.band(bit32.rshift(nonce, i * 8), 0xff)
+    for i = 0,4 do
+        block[i] = bit32.band(bit32.rshift(nonce, i * 8), 0xff)
     end
 end
 )",
@@ -6733,20 +6745,19 @@ end
                ),
         R"(
 LOADN R4 0
-LOADN R2 3
+LOADN R2 4
 LOADN R3 1
 FORNPREP R2 L1
-L0: ADDK R5 R4 K0 [1]
-GETGLOBAL R6 K1 ['bit32']
-GETTABLEKS R6 R6 K2 ['band']
-GETGLOBAL R7 K1 ['bit32']
-GETTABLEKS R7 R7 K3 ['rshift']
-MOVE R8 R1
-MULK R9 R4 K4 [8]
-CALLFB R7 2 1 [0]
-LOADN R8 255
-CALLFB R6 2 1 [1]
-SETTABLE R6 R0 R5
+L0: GETGLOBAL R5 K0 ['bit32']
+GETTABLEKS R5 R5 K1 ['band']
+GETGLOBAL R6 K0 ['bit32']
+GETTABLEKS R6 R6 K2 ['rshift']
+MOVE R7 R1
+MULK R8 R4 K3 [8]
+CALLFB R6 2 1 [0]
+LOADN R7 255
+CALLFB R5 2 1 [1]
+SETTABLE R5 R0 R4
 FORNLOOP R2 L0
 L1: RETURN R0 0
 )"
@@ -6757,8 +6768,8 @@ L1: RETURN R0 0
         "\n" + compileFunction(
                    R"(
 function cipher(block, nonce)
-    for i = 0,3 do
-        block[i + 1] = bit32.band(bit32.rshift(nonce, i * 8), 0xff, 0xff, 0xff, 0xff, 0xff)
+    for i = 0,4 do
+        block[i] = bit32.band(bit32.rshift(nonce, i * 8), 0xff, 0xff, 0xff, 0xff, 0xff)
     end
 end
 )",
@@ -6767,24 +6778,23 @@ end
                ),
         R"(
 LOADN R4 0
-LOADN R2 3
+LOADN R2 4
 LOADN R3 1
 FORNPREP R2 L3
-L0: ADDK R5 R4 K0 [1]
-MULK R9 R4 K1 [8]
-FASTCALL2 39 R1 R9 L1
-MOVE R8 R1
-GETIMPORT R7 4 [bit32.rshift]
-CALL R7 2 1
-L1: LOADN R8 255
+L0: MULK R8 R4 K0 [8]
+FASTCALL2 39 R1 R8 L1
+MOVE R7 R1
+GETIMPORT R6 3 [bit32.rshift]
+CALL R6 2 1
+L1: LOADN R7 255
+LOADN R8 255
 LOADN R9 255
 LOADN R10 255
 LOADN R11 255
-LOADN R12 255
 FASTCALL 29 L2
-GETIMPORT R6 6 [bit32.band]
-CALL R6 6 1
-L2: SETTABLE R6 R0 R5
+GETIMPORT R5 5 [bit32.band]
+CALL R5 6 1
+L2: SETTABLE R5 R0 R4
 FORNLOOP R2 L0
 L3: RETURN R0 0
 )"
@@ -7018,7 +7028,7 @@ TEST_CASE("InlineNestedLoops")
         "\n" + compileFunction(
                    R"(
 local function foo(t)
-    for i=1,3 do
+    for i=0,3 do
         t[i] = i
     end
     return t
@@ -7033,12 +7043,12 @@ return x
         R"(
 DUPCLOSURE R0 K0 ['foo']
 NEWTABLE R2 0 0
+LOADN R3 0
+SETTABLEN R3 R2 0
 LOADN R3 1
 SETTABLEN R3 R2 1
 LOADN R3 2
 SETTABLEN R3 R2 2
-LOADN R3 3
-SETTABLEN R3 R2 3
 MOVE R1 R2
 RETURN R1 1
 )"
@@ -7049,7 +7059,7 @@ RETURN R1 1
         "\n" + compileFunction(
                    R"(
 local function foo(t, n)
-    for i=1, n do
+    for i=0, n do
         t[i] = i
     end
     return t
@@ -7064,12 +7074,12 @@ return x
         R"(
 DUPCLOSURE R0 K0 ['foo']
 NEWTABLE R2 0 0
+LOADN R3 0
+SETTABLEN R3 R2 0
 LOADN R3 1
 SETTABLEN R3 R2 1
 LOADN R3 2
 SETTABLEN R3 R2 2
-LOADN R3 3
-SETTABLEN R3 R2 3
 MOVE R1 R2
 RETURN R1 1
 )"
@@ -8042,13 +8052,13 @@ end
 local _ = _(0)[""]
 if _ then
 do
-for l0=0,8 do
+for l0=0,9 do
 end
 end
 elseif _ then
 _ = nil
 do
-for l0=0,8 do
+for l0=0,9 do
 return true
 end
 end
@@ -8642,7 +8652,7 @@ RETURN R1 2
                    R"(
 local function foo(a)
     local s = 0
-    for i = 1,5 do
+    for i = 1,6 do
         if a == 1 then
             s += i
         elseif a == 2 then
@@ -8709,11 +8719,11 @@ RETURN R1 1
 local function funnyhex(a)
     local z = string.byte('0')
     local set = "0123456789abcdef"
-    if a < 10 then return string.sub(set, a+1, a+1)
-    elseif a < 100 then return `{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}`
-    elseif a < 1000 then return `{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}`
-    elseif a < 10000 then return `{string.sub(set, (a/1000)%10+1, (a/1000)%10+1)}{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}`
-    elseif a < 100000 then return `{string.sub(set, (a/10000)%10+1, (a/10000)%10+1)}{string.sub(set, (a/1000)%10+1, (a/1000)%10+1)}{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}`
+    if a < 10 then return string.sub(set, a, a+1)
+    elseif a < 100 then return `{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}`
+    elseif a < 1000 then return `{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}`
+    elseif a < 10000 then return `{string.sub(set, (a/1000)%10, (a/1000)%10+1)}{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}`
+    elseif a < 100000 then return `{string.sub(set, (a/10000)%10, (a/10000)%10+1)}{string.sub(set, (a/1000)%10, (a/1000)%10+1)}{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}`
     else return tostring(a) end
 end
 
@@ -8744,11 +8754,11 @@ RETURN R1 5
 local function funnyhex(a)
     local z = string.byte('0')
     local set = "0123456789abcdef"
-    if a < 10 then return string.sub(set, a+1, a+1) end
-    if a < 100 then return `{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}` end
-    if a < 1000 then return `{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}` end
-    if a < 10000 then return `{string.sub(set, (a/1000)%10+1, (a/1000)%10+1)}{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}` end
-    if a < 100000 then return `{string.sub(set, (a/10000)%10+1, (a/10000)%10+1)}{string.sub(set, (a/1000)%10+1, (a/1000)%10+1)}{string.sub(set, (a/100)%10+1, (a/100)%10+1)}{string.sub(set, (a/10)%10+1, (a/10)%10+1)}{string.sub(set, a%10+1, a%10+1)}` end
+    if a < 10 then return string.sub(set, a, a+1) end
+    if a < 100 then return `{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}` end
+    if a < 1000 then return `{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}` end
+    if a < 10000 then return `{string.sub(set, (a/1000)%10, (a/1000)%10+1)}{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}` end
+    if a < 100000 then return `{string.sub(set, (a/10000)%10, (a/10000)%10+1)}{string.sub(set, (a/1000)%10, (a/1000)%10+1)}{string.sub(set, (a/100)%10, (a/100)%10+1)}{string.sub(set, (a/10)%10, (a/10)%10+1)}{string.sub(set, a%10, a%10+1)}` end
     return tostring(a)
 end
 
@@ -8787,8 +8797,8 @@ local function foo(a)
     return s
 end
 
-local x = foo(3)
-local y = foo(100)
+local x = foo(4)
+local y = foo(101)
 return x, y
 )",
                    1,
@@ -8802,7 +8812,7 @@ ADDK R2 R2 K2 [2]
 ADDK R2 R2 K3 [3]
 MOVE R1 R2
 MOVE R2 R0
-LOADN R3 100
+LOADN R3 101
 CALL R2 1 1
 RETURN R1 2
 )"
@@ -9390,7 +9400,7 @@ return
     bit32.rshift(100, 1),
     type(100),
     string.byte("a"),
-    string.byte("abc", 2),
+    string.byte("abc", 1),
     string.len("abc"),
     typeof(true),
     math.clamp(-1, 0, 1),
@@ -9801,15 +9811,15 @@ RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction0(R"(
         local t
-        t[1], t[2] = 3, 4
+        t[0], t[1] = 3, 4
     )"),
         R"(
 LOADNIL R0
 LOADNIL R1
 LOADN R2 3
 LOADN R3 4
-SETTABLEN R2 R0 1
-SETTABLEN R3 R1 2
+SETTABLEN R2 R0 0
+SETTABLEN R3 R1 1
 RETURN R0 0
 )"
     );
@@ -9818,14 +9828,14 @@ RETURN R0 0
     CHECK_EQ(
         "\n" + compileFunction0(R"(
         local t = ...
-        t[1], t[2] = t[2], t[1]
+        t[0], t[1] = t[1], t[0]
     )"),
         R"(
 GETVARARGS R0 1
-GETTABLEN R1 R0 2
-GETTABLEN R2 R0 1
-SETTABLEN R1 R0 1
-SETTABLEN R2 R0 2
+GETTABLEN R1 R0 1
+GETTABLEN R2 R0 0
+SETTABLEN R1 R0 0
+SETTABLEN R2 R0 1
 RETURN R0 0
 )"
     );
@@ -11179,17 +11189,17 @@ TEST_CASE("StringSubFolding")
 local s = "123456789"
 
 return
-    string.sub(s, 2, 4),
-    string.sub(s, 7),
-    string.sub(s, 7, 6),
-    string.sub(s, 7, 7),
+    string.sub(s, 1, 4),
+    string.sub(s, 6),
+    string.sub(s, 6, 6),
+    string.sub(s, 6, 7),
     string.sub(s, 0, 0),
-    string.sub(s, -10, 10),
-    string.sub(s, 1, 9),
+    string.sub(s, 0, 9),
+    string.sub(s, 0, 9),
     string.sub(s, -10, -20),
     string.sub(s, -1),
     string.sub(s, -4),
-    string.sub(s, -6, -4)
+    string.sub(s, -6, -3)
 )",
                    0,
                    2

@@ -780,9 +780,9 @@ reentry:
                     int index = int(indexd);
 
                     // index has to be an exact integer and in-bounds for the array portion
-                    if (LUAU_LIKELY(unsigned(index) - 1 < unsigned(h->sizearray) && !h->metatable && double(index) == indexd))
+                    if (LUAU_LIKELY(unsigned(index) < unsigned(h->sizearray) && !h->metatable && double(index) == indexd))
                     {
-                        setobj2s(L, ra, &h->array[unsigned(index - 1)]);
+                        setobj2s(L, ra, &h->array[unsigned(index)]);
                         VM_NEXT();
                     }
 
@@ -810,9 +810,9 @@ reentry:
                     int index = int(indexd);
 
                     // index has to be an exact integer and in-bounds for the array portion
-                    if (LUAU_LIKELY(unsigned(index) - 1 < unsigned(h->sizearray) && !h->metatable && !h->readonly && double(index) == indexd))
+                    if (LUAU_LIKELY(unsigned(index) < unsigned(h->sizearray) && !h->metatable && !h->readonly && double(index) == indexd))
                     {
-                        setobj2t(L, &h->array[unsigned(index - 1)], ra);
+                        setobj2t(L, &h->array[unsigned(index)], ra);
                         luaC_barriert(L, h, ra);
                         VM_NEXT();
                     }
@@ -848,7 +848,7 @@ reentry:
 
                 // slow-path: handles out of bounds array lookups
                 TValue n;
-                setnvalue(&n, c + 1);
+                setnvalue(&n, c);
                 VM_PROTECT(luaV_gettable(L, rb, &n, ra));
                 VM_NEXT();
             }
@@ -877,7 +877,7 @@ reentry:
 
                 // slow-path: handles out of bounds array lookups
                 TValue n;
-                setnvalue(&n, c + 1);
+                setnvalue(&n, c);
                 VM_PROTECT(luaV_settable(L, rb, &n, ra));
                 VM_NEXT();
             }
@@ -2546,7 +2546,7 @@ reentry:
                 double idx = nvalue(ra + 2);
 
                 // Note: make sure the loop condition is exactly the same between this and LOP_FORNLOOP so that we handle NaN/etc. consistently
-                pc += (step > 0 ? idx <= limit : limit <= idx) ? 0 : LUAU_INSN_D(insn);
+                pc += (step > 0 ? idx < limit : limit < idx) ? 0 : LUAU_INSN_D(insn);
                 VM_ASSERT_PC(pc);
                 VM_NEXT();
             }
@@ -2567,7 +2567,7 @@ reentry:
                 setnvalue(ra + 2, idx);
 
                 // Note: make sure the loop condition is exactly the same between this and LOP_FORNPREP so that we handle NaN/etc. consistently
-                if (step > 0 ? idx <= limit : limit <= idx)
+                if (step > 0 ? idx < limit : limit < idx)
                 {
                     pc += LUAU_INSN_D(insn);
                     VM_ASSERT_PC(pc);
@@ -2742,7 +2742,7 @@ reentry:
                         if (!ttisnil(e))
                         {
                             setpvalue(ra + 2, reinterpret_cast<void*>(uintptr_t(index + 1)), LU_TAG_ITERATOR);
-                            setnvalue(ra + 3, double(index + 1));
+                            setnvalue(ra + 3, double(index));
                             setobj2s(L, ra + 4, e);
 
                             pc += LUAU_INSN_D(insn);
@@ -2822,7 +2822,7 @@ reentry:
                 VM_CASE_STKID ra = VM_REG(LUAU_INSN_A(insn));
 
                 // fast-path: ipairs/inext
-                if (cl->env->safeenv && ttistable(ra + 1) && ttisnumber(ra + 2) && nvalue(ra + 2) == 0.0)
+                if (cl->env->safeenv && ttistable(ra + 1) && ttisnumber(ra + 2) && nvalue(ra + 2) == -1.0)
                 {
                     setnilvalue(ra);
                     // ra+1 is already the table

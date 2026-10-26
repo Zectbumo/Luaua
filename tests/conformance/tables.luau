@@ -13,9 +13,9 @@ local a = {}
 for i=1,100 do a[i.."+"] = true end
 for i=1,100 do a[i.."+"] = nil end
 -- fill hash part with numeric indices testing size operator
-for i=1,100 do
+for i=0,100 do
   a[i] = true
-  assert(#a == i)
+  assert(#a == i + 1)
 end
 
 
@@ -58,10 +58,10 @@ end
 -- testing constructor sizes
 local lim = 40
 local s = 'return {'
-for i=1,lim do
+for i=1,lim+1 do
   s = s..i..','
   local s = s
-  for k=0,lim do 
+  for k=0,lim+1 do
     local t = loadstring(s..'}')()
     assert(#t == i)
     check(t, fb(i), mp2(k))
@@ -72,12 +72,12 @@ end
 
 -- tests with unknown number of elements
 local a = {}
-for i=1,lim do a[i] = i end   -- build auxiliary table
-for k=0,lim do
-  local a = {unpack(a,1,k)}
+for i=0,lim do a[i] = i end   -- build auxiliary table
+for k=0,lim+1 do
+  local a = {unpack(a,0,k)}
   assert(#a == k)
   check(a, k, 0)
-  a = {1,2,3,unpack(a,1,k)}
+  a = {1,2,3,unpack(a,0,k)}
   check(a, k+3, 0)
   assert(#a == k + 3)
 end
@@ -89,20 +89,20 @@ print'+'
 local lim = 130
 
 do
-  local a = {}; a[2] = 1; check(a, 0, 1)
-  a = {}; a[0] = 1; check(a, 0, 1); a[2] = 1; check(a, 0, 2)
-  a = {}; a[0] = 1; a[1] = 1; check(a, 1, 1)
+  local a = {}; a[1] = 1; check(a, 0, 1)
+  a = {}; a[-1] = 1; check(a, 0, 1); a[1] = 1; check(a, 0, 2)
+  a = {}; a[-1] = 1; a[0] = 1; check(a, 1, 1)
   a = {}
-  for i = 1,lim do
+  for i = 0,lim do
     a[i] = 1
-    assert(#a == i)
-    check(a, mp2(i), 0)
+    assert(#a == i + 1)
+    check(a, mp2(i + 1), 0)
   end
 end
 
 do
   local a = {}
-  for i = 1,lim do
+  for i = 1,lim+1 do
     a['a'..i] = 1
     assert(#a == 0)
     check(a, 0, mp2(i))
@@ -111,40 +111,40 @@ end
 
 do
   local a = {}
-  for i=1,16 do a[i] = i end
+  for i=0,16 do a[i] = i end
   check(a, 16, 0)
-  for i=1,11 do a[i] = nil end
-  for i=30,40 do a[i] = nil end   -- force a rehash (?)
+  for i=0,11 do a[i] = nil end
+  for i=29,40 do a[i] = nil end   -- force a rehash (?)
   check(a, 0, 8)
-  a[10] = 1
-  for i=30,40 do a[i] = nil end   -- force a rehash (?)
+  a[9] = 1
+  for i=29,40 do a[i] = nil end   -- force a rehash (?)
   check(a, 0, 8)
-  for i=1,14 do a[i] = nil end
-  for i=30,50 do a[i] = nil end   -- force a rehash (?)
+  for i=0,14 do a[i] = nil end
+  for i=29,50 do a[i] = nil end   -- force a rehash (?)
   check(a, 0, 4)
 end
 
 do   -- rehash moving elements from array to hash
   local a = {}
-  for i = 1, 100 do a[i] = i end
+  for i = 0, 100 do a[i] = i end
   check(a, 128, 0)
 
-  for i = 5, 95 do a[i] = nil end
+  for i = 4, 95 do a[i] = nil end
   check(a, 128, 0)
 
   a.x = 1     -- force a re-hash
   check(a, 4, 8)
 
-  for i = 1, 4 do assert(a[i] == i) end
-  for i = 5, 95 do assert(a[i] == nil) end
-  for i = 96, 100 do assert(a[i] == i) end
+  for i = 0, 4 do assert(a[i] == i) end
+  for i = 4, 95 do assert(a[i] == nil) end
+  for i = 95, 100 do assert(a[i] == i) end
   assert(a.x == 1)
 end
 
 -- reverse filling
-for i=1,lim do
+for i=1,lim+1 do
   local a = {}
-  for i=i,1,-1 do a[i] = i end   -- fill in reverse
+  for j=i-1,-1,-1 do a[j] = j end   -- fill in reverse
   check(a, mp2(i), 0)
 end
 
@@ -154,13 +154,13 @@ function foo (n, ...)
   local arg = {...}
   check(arg, n, 0)
   assert(select('#', ...) == n)
-  arg[n+1] = true
+  arg[n] = true
   check(arg, mp2(n+1), 0)
   arg.x = true
   check(arg, mp2(n+1), 1)
 end
 local a = {}
-for i=1,lim do a[i] = true; foo(i, unpack(a)) end
+for i=1,lim+1 do a[i-1] = true; foo(i, unpack(a)) end
 
 end
 
@@ -215,7 +215,7 @@ end)
 a = {10,20,30,nil,50}
 table.foreachi(a, function (i,v) assert(a[i] == v) end)
 assert(table.foreachi({'a', 'b', 'c'}, function (i,v)
-         if i==2 then return v end
+         if i==1 then return v end
        end) == 'b')
 
 
@@ -300,14 +300,14 @@ assert(table.getn{[-1] = 2} == 0)
 assert(table.getn{1,2,3,nil,nil} == 3)
 for i=0,40 do
   local a = {}
-  for j=1,i do a[j]=j end
+  for j=0,i do a[j]=j end
   assert(table.getn(a) == i)
 end
 
 
-assert(table.maxn{} == 0)
-assert(table.maxn{[-100] = 1} == 0)
-assert(table.maxn{["1000"] = true} == 0)
+assert(table.maxn{} == nil)
+assert(table.maxn{[-100] = 1} == -100)
+assert(table.maxn{["1000"] = true} == nil)
 assert(table.maxn{["1000"] = true, [24.5] = 3} == 24.5)
 assert(table.maxn{[1000] = true} == 1000)
 assert(table.maxn{[10] = true, [100*math.pi] = print} == 100*math.pi)
@@ -318,8 +318,8 @@ assert(table.maxn(a) == 10)
 
 -- int overflow
 a = {}
-for i=0,50 do a[math.pow(2,i)] = true end
-assert(a[table.getn(a)])
+for i=0,50 do a[math.pow(2,i)-1] = true end
+assert(a[table.getn(a)-1])
 
 print("+")
 
@@ -340,17 +340,17 @@ assert(n == 5)
 
 
 local function test (a)
-  table.insert(a, 10); table.insert(a, 2, 20);
-  table.insert(a, 1, -1); table.insert(a, 40);
-  table.insert(a, table.getn(a)+1, 50)
-  table.insert(a, 2, -2)
-  assert(table.remove(a,1) == -1)
-  assert(table.remove(a,1) == -2)
-  assert(table.remove(a,1) == 10)
-  assert(table.remove(a,1) == 20)
-  assert(table.remove(a,1) == 40)
-  assert(table.remove(a,1) == 50)
-  assert(table.remove(a,1) == nil)
+  table.insert(a, 10); table.insert(a, 1, 20);
+  table.insert(a, 0, -1); table.insert(a, 40);
+  table.insert(a, table.getn(a), 50)
+  table.insert(a, 1, -2)
+  assert(table.remove(a,0) == -1)
+  assert(table.remove(a,0) == -2)
+  assert(table.remove(a,0) == 10)
+  assert(table.remove(a,0) == 20)
+  assert(table.remove(a,0) == 40)
+  assert(table.remove(a,0) == 50)
+  assert(table.remove(a,0) == nil)
 end
 
 a = {n=0, [-7] = "ban"}
@@ -362,33 +362,33 @@ test(a)
 assert(a.n == nil and table.getn(a) == 0 and a[-7] == "ban")
 
 
-table.insert(a, 1, 10); table.insert(a, 1, 20); table.insert(a, 1, -1)
+table.insert(a, 0, 10); table.insert(a, 0, 20); table.insert(a, 0, -1)
 assert(table.remove(a) == 10)
 assert(table.remove(a) == 20)
 assert(table.remove(a) == -1)
 
 a = {'c', 'd'}
-table.insert(a, 3, 'a')
+table.insert(a, 2, 'a')
 table.insert(a, 'b')
-assert(table.remove(a, 1) == 'c')
-assert(table.remove(a, 1) == 'd')
-assert(table.remove(a, 1) == 'a')
-assert(table.remove(a, 1) == 'b')
+assert(table.remove(a, 0) == 'c')
+assert(table.remove(a, 0) == 'd')
+assert(table.remove(a, 0) == 'a')
+assert(table.remove(a, 0) == 'b')
 assert(table.getn(a) == 0 and a.n == nil)
 print("+")
 
 -- out of range insertion
 a = {1, 2, 3}
-table.insert(a, 0, 0)
-assert(a[0] == 0 and table.concat(a) == "123")
-table.insert(a, 10, 10)
-assert(a[0] == 0 and table.concat(a) == "123" and table.maxn(a) == 10 and a[10] == 10)
+table.insert(a, -1, 0)
+assert(a[-1] == 0 and table.concat(a) == "123")
+table.insert(a, 9, 10)
+assert(a[-1] == 0 and table.concat(a) == "123" and table.maxn(a) == 9 and a[9] == 10)
 table.insert(a, -10^9, 42)
-assert(a[0] == 0 and table.concat(a) == "123" and table.maxn(a) == 10 and a[10] == 10 and a[-10^9] == 42)
+assert(a[-1] == 0 and table.concat(a) == "123" and table.maxn(a) == 9 and a[9] == 10 and a[-10^9] == 42)
 table.insert(a, 0 / 0, 42) -- platform-dependent behavior atm so hard to validate
 
 a = {}
-for i=1,1000 do
+for i=1,1001 do
   a[i] = i; a[i-1] = nil
 end
 assert(next(a,nil) == 1000 and next(a,1000) == nil)
@@ -400,17 +400,17 @@ assert(next({}, nil) == nil)
 do
   local t = table.create(5)
   assert(#t == 0) -- filled with nil!
-  t[5] = 5
+  t[4] = 5
   assert(#t == 5) -- magic
 
   local t2 = table.create(5, "nice")
   assert(table.concat(t2,"!") == "nice!nice!nice!nice!nice")
 
-  assert(table.find(t2, "nice") == 1)
-  assert(table.find(t2, "nice", 5) == 5)
-  assert(table.find(t2, "nice", 6) == nil)
+  assert(table.find(t2, "nice") == 0)
+  assert(table.find(t2, "nice", 4) == 4)
+  assert(table.find(t2, "nice", 5) == nil)
 
-  assert(table.find({false, true}, true) == 2)
+  assert(table.find({false, true}, true) == 1)
 
   -- make sure table.find checks the hash portion as well
   assert(table.find({[(2)] = true}, true, 2) == 2)
@@ -430,9 +430,9 @@ do
   table.insert(t3, makeobja(2, 3))
   table.insert(t3, makeobja(3, 4))
 
+  assert(table.find(t3, t3[0]) == 0)
   assert(table.find(t3, t3[1]) == 1)
   assert(table.find(t3, t3[2]) == 2)
-  assert(table.find(t3, t3[3]) == 3)
 
   -- table.find respects __eq effects
   local function addnrec(n)
@@ -451,7 +451,7 @@ do
   local o = makeobjb(20)
   local t4 = {o, o, o, o, o, o, o, o}
 
-  assert(table.find(t4, makeobjb(20)) == 1)
+  assert(table.find(t4, makeobjb(20)) == 0)
   assert(table.find(t4, makeobjb(500)) == nil)
 end
 
@@ -461,8 +461,8 @@ do
   assert(table.concat({}) == "")
   assert(table.concat({}, ",") == "")
   assert(table.concat({"a", "b", "c"}, ",") == "a,b,c")
-  assert(table.concat({"a", "b", "c"}, ",", 2) == "b,c")
-  assert(table.concat({"a", "b", "c"}, ",", 1, 2) == "a,b")
+  assert(table.concat({"a", "b", "c"}, ",", 1) == "b,c")
+  assert(table.concat({"a", "b", "c"}, ",", 0, 2) == "a,b")
 
   -- hash elements
   local t = {}
@@ -470,8 +470,8 @@ do
   t[124] = "b"
 
   assert(table.concat(t) == "")
-  assert(table.concat(t, ",", 123, 124) == "a,b")
-  assert(table.concat(t, ",", 123, 123) == "a")
+  assert(table.concat(t, ",", 123, 125) == "a,b")
+  assert(table.concat(t, ",", 123, 124) == "a")
 
   -- numeric values
   assert(table.concat({1, 2, 3}, ",") == "1,2,3")
@@ -528,22 +528,22 @@ end
 do
   local t = table.create(10, 1)
   assert(#t == 10)
-  t[5] = nil
+  t[4] = nil
   assert(#t == 10)
-  t[10] = nil
-  assert(#t == 9)
   t[9] = nil
+  assert(#t == 9)
   t[8] = nil
+  t[7] = nil
   assert(#t == 7)
 
   t = table.create(10)
   assert(#t == 0)
-  t[1] = 1
+  t[0] = 1
   assert(#t == 1)
-  t[2] = 1
+  t[1] = 1
   assert(#t == 2)
+  t[2] = 1
   t[3] = 1
-  t[4] = 1
   assert(#t == 4)
 
   t = table.create(10)
@@ -607,7 +607,7 @@ end
 do
   local arr = table.create(5, 42)
 
-  arr[1] = nil
+  arr[0] = nil
   arr.a = 'a' -- trigger rehash
 
   assert(#arr == 5) -- technically 0 is also valid, but it happens to be 5 because array capacity is 5
@@ -618,7 +618,7 @@ do
   local arr = {}
   arr.a = 'a'
   arr.a = nil
-  arr[1] = 1 -- should rehash and resize array part, otherwise # won't find the boundary in array part
+  arr[0] = 1 -- should rehash and resize array part, otherwise # won't find the boundary in array part
 
   assert(#arr == 1)
 end
@@ -626,26 +626,26 @@ end
 -- test boundary invariant maintenance when table is filled from the end
 do
   local arr = {}
-  for i=5,2,-1 do
+  for i=4,0,-1 do
     arr[i] = i
     assert(#arr == 0)
   end
-  arr[1] = 1
+  arr[0] = 1
   assert(#arr == 5)
 end
 
 -- test boundary invariant maintenance when table is filled using SETLIST opcode
 do
-  local arr = {[2]=2,1}
+  local arr = {[1]=2,1}
   assert(#arr == 2)
 end
 
 -- test boundary invariant maintenance when table is filled using table.move
 do
   local t1 = {1, 2, 3, 4, 5}
-  local t2 = {[6] = 6}
+  local t2 = {[5] = 6}
 
-  table.move(t1, 1, 5, 1, t2)
+  table.move(t1, 0, 5, 0, t2)
   assert(#t2 == 6)
 end
 
@@ -729,9 +729,9 @@ do
         local k1 = next(t)    -- all previous keys were deleted
         assert(k == k1)       -- current key is the first in the table
         t[k] = nil
-        local expected = (type(k) == "table" and k[1] or
+        local expected = (type(k) == "table" and k[0] or
                           type(k) == "function" and k() or
-                          string.sub(k, 1, 1))
+                          string.sub(k, 0, 1))
         assert(expected == v)
         coroutine.yield(v)
     end
@@ -767,7 +767,7 @@ do
   assert(pcall(table.create, -1) == false)
   assert(pcall(table.create, 1e9) == false)
 
-  assert(pcall(table.find, {}, 42, 0) == false)
+  assert(pcall(table.find, {}, 42, -1) == false)
 
   assert(pcall(table.clear, table.freeze({})) == false)
 end

@@ -730,7 +730,7 @@ static int getComponents(lua_State* L)
         {
             TypeFunctionTypeId component = tfut->components[i];
             allocTypeUserData(L, component->type);
-            lua_rawseti(L, -2, i + 1); // Luau is 1-indexed while C++ is 0-indexed
+            lua_rawseti(L, -2, i);
         }
 
         return 1;
@@ -746,7 +746,7 @@ static int getComponents(lua_State* L)
         {
             TypeFunctionTypeId component = tfit->components[i];
             allocTypeUserData(L, component->type);
-            lua_rawseti(L, -2, i + 1); // Luau is 1-indexed while C++ is 0-indexed
+            lua_rawseti(L, -2, i);
         }
 
         return 1;
@@ -1159,7 +1159,7 @@ static std::tuple<std::vector<TypeFunctionTypeId>, std::vector<TypeFunctionTypeP
     {
         lua_pushvalue(L, idx);
 
-        for (int i = 1; i <= lua_objlen(L, -1); i++)
+        for (int i = 0; i < lua_objlen(L, -1); i++)
         {
             lua_pushinteger(L, i);
             lua_gettable(L, -2);
@@ -1214,7 +1214,7 @@ static TypeFunctionTypePackId getTypePack(lua_State* L, int headIdx, int tailIdx
     {
         lua_pushvalue(L, headIdx);
 
-        for (int i = 1; i <= lua_objlen(L, -1); i++)
+        for (int i = 0; i < lua_objlen(L, -1); i++)
         {
             lua_pushinteger(L, i);
             lua_gettable(L, -2);
@@ -1259,7 +1259,7 @@ void pushTypePack(lua_State* L, TypeFunctionTypePackId tp)
         if (!tftp->head.empty())
         {
             lua_createtable(L, int(tftp->head.size()), 0);
-            int pos = 1;
+            int pos = 0;
 
             for (auto el : tftp->head)
             {
@@ -1469,7 +1469,7 @@ static int getFunctionGenerics(lua_State* L)
 
     lua_createtable(L, int(tfft->generics.size()) + int(tfft->genericPacks.size()), 0);
 
-    int pos = 1;
+    int pos = 0;
 
     for (const auto& el : tfft->generics)
     {

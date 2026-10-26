@@ -22,6 +22,7 @@ namespace Luau
 
 static_assert(LBC_VERSION_TARGET >= LBC_VERSION_MIN && LBC_VERSION_TARGET <= LBC_VERSION_MAX, "Invalid bytecode version setup");
 static_assert(LBC_VERSION_MAX <= 127, "Bytecode version should be 7-bit so that we can extend the serialization to use varint transparently");
+static_assert(LBC_BYTECODE_MARKER == 0x80, "Luaua bytecode marker must occupy the reserved high bit");
 
 static const uint32_t kMaxConstantCount = 1 << 23;
 static const uint32_t kMaxClosureCount = 1 << 15;
@@ -761,7 +762,8 @@ void BytecodeBuilder::finalize()
     uint8_t version = getVersion();
     LUAU_ASSERT((version >= LBC_VERSION_MIN && version <= LBC_VERSION_MAX) || version == LBC_VERSION_CLASSES);
 
-    bytecode = char(version);
+    bytecode = char(LBC_BYTECODE_MARKER);
+    writeByte(bytecode, version);
 
     uint8_t typesversion = getTypeEncodingVersion();
     LUAU_ASSERT(typesversion >= LBC_TYPE_VERSION_MIN && typesversion <= LBC_TYPE_VERSION_MAX);
@@ -1463,7 +1465,7 @@ std::vector<uint32_t> BytecodeBuilder::expandJumps()
 
 std::string BytecodeBuilder::getError(const std::string& message)
 {
-    // 0 acts as a special marker for error bytecode (it's equal to LBC_VERSION_TARGET for valid bytecode blobs)
+    // 0 acts as a special marker for error bytecode; successful Luaua bytecode starts with LBC_BYTECODE_MARKER
     std::string result;
     result += char(0);
     result += message;
@@ -2451,11 +2453,11 @@ void BytecodeBuilder::dumpInstruction(const uint32_t* code, std::string& result,
         break;
 
     case LOP_GETTABLEN:
-        formatAppend(result, "GETTABLEN R%d R%d %d\n", LUAU_INSN_A(insn), LUAU_INSN_B(insn), LUAU_INSN_C(insn) + 1);
+        formatAppend(result, "GETTABLEN R%d R%d %d\n", LUAU_INSN_A(insn), LUAU_INSN_B(insn), LUAU_INSN_C(insn));
         break;
 
     case LOP_SETTABLEN:
-        formatAppend(result, "SETTABLEN R%d R%d %d\n", LUAU_INSN_A(insn), LUAU_INSN_B(insn), LUAU_INSN_C(insn) + 1);
+        formatAppend(result, "SETTABLEN R%d R%d %d\n", LUAU_INSN_A(insn), LUAU_INSN_B(insn), LUAU_INSN_C(insn));
         break;
 
     case LOP_NEWCLOSURE:

@@ -21,34 +21,34 @@ assert('\0\0\0' >= '\0\0\0')
 assert(not ('\0\0b' < '\0\0a\0'))
 print('+')
 
-assert(string.sub("123456789",2,4) == "234")
-assert(string.sub("123456789",7) == "789")
-assert(string.sub("123456789",7,6) == "")
-assert(string.sub("123456789",7,7) == "7")
+assert(string.sub("123456789",1,4) == "234")
+assert(string.sub("123456789",6) == "789")
+assert(string.sub("123456789",6,6) == "")
+assert(string.sub("123456789",6,7) == "7")
 assert(string.sub("123456789",0,0) == "")
 assert(string.sub("123456789",-10,10) == "123456789")
-assert(string.sub("123456789",1,9) == "123456789")
-assert(string.sub("123456789",-10,-20) == "")
+assert(string.sub("123456789",0,9) == "123456789")
+assert(string.sub("123456789",-10,-19) == "")
 assert(string.sub("123456789",-1) == "9")
 assert(string.sub("123456789",-4) == "6789")
-assert(string.sub("123456789",-6, -4) == "456")
-assert(string.sub("\000123456789",3,5) == "234")
-assert(("\000123456789"):sub(8) == "789")
+assert(string.sub("123456789",-6, -3) == "456")
+assert(string.sub("\000123456789",2,5) == "234")
+assert(("\000123456789"):sub(7) == "789")
 print('+')
 
-assert(string.find("123456789", "345") == 3)
+assert(string.find("123456789", "345") == 2)
 a,b = string.find("123456789", "345")
 assert(string.sub("123456789", a, b) == "345")
-assert(string.find("1234567890123456789", "345", 3) == 3)
-assert(string.find("1234567890123456789", "345", 4) == 13)
-assert(string.find("1234567890123456789", "346", 4) == nil)
-assert(string.find("1234567890123456789", ".45", -9) == 13)
-assert(string.find("abcdefg", "\0", 5, 1) == nil)
-assert(string.find("", "") == 1)
-assert(string.find('', 'aaa', 1) == nil)
-assert(('alo(.)alo'):find('(.)', 1, 1) == 4)
-assert(string.find('', '1', 2) == nil)
-assert(string.find('123', '2', 0) == 2)
+assert(string.find("1234567890123456789", "345", 2) == 2)
+assert(string.find("1234567890123456789", "345", 3) == 12)
+assert(string.find("1234567890123456789", "346", 3) == nil)
+assert(string.find("1234567890123456789", ".45", -9) == 12)
+assert(string.find("abcdefg", "\0", 4, 1) == nil)
+assert(string.find("", "") == 0)
+assert(string.find('', 'aaa', 0) == nil)
+assert(('alo(.)alo'):find('(.)', 0, 1) == 3)
+assert(string.find('', '1', 1) == nil)
+assert(string.find('123', '2', 0) == 1)
 print('+')
 
 assert(string.len("") == 0)
@@ -66,19 +66,19 @@ assert(string.byte(string.char(255)) == 255)
 assert(string.byte(string.char(0)) == 0)
 assert(string.byte("\0") == 0)
 assert(string.byte("\0\0alo\0x", -1) == string.byte('x'))
-assert(string.byte("ba", 2) == 97)
-assert(string.byte("\n\n", 2, -1) == 10)
-assert(string.byte("\n\n", 2, 2) == 10)
+assert(string.byte("ba", 1) == 97)
+assert(string.byte("\n\n", 1, -1) == nil)
+assert(string.byte("\n\n", 1, 2) == 10)
 assert(string.byte("") == nil)
 assert(string.byte("hi", -3) == nil)
-assert(string.byte("hi", 3) == nil)
-assert(string.byte("hi", 9, 10) == nil)
-assert(string.byte("hi", 2, 1) == nil)
+assert(string.byte("hi", 2) == nil)
+assert(string.byte("hi", 8, 10) == nil)
+assert(string.byte("hi", 1, 1) == nil)
 assert(string.char() == "")
 assert(string.char(0, 255, 0) == "\0\255\0")
 assert(string.char(0, string.byte("\xe4"), 0) == "\0\xe4\0")
-assert(string.char(string.byte("\xe4l\0óu", 1, -1)) == "\xe4l\0óu")
-assert(string.char(string.byte("\xe4l\0óu", 1, 0)) == "")
+assert(string.char(string.byte("\xe4l\0óu", 0, #"\xe4l\0óu")) == "\xe4l\0óu")
+assert(string.char(string.byte("\xe4l\0óu", 0, 0)) == "")
 assert(string.char(string.byte("\xe4l\0óu", -10, 100)) == "\xe4l\0óu")
 assert(pcall(function() return string.char(256) end) == false)
 assert(pcall(function() return string.char(-1) end) == false)
@@ -96,7 +96,7 @@ assert(string.reverse"" == "")
 assert(string.reverse"\0\1\2\3" == "\3\2\1\0")
 assert(string.reverse"\0001234" == "4321\0")
 
-for i=0,30 do assert(string.len(string.rep('a', i)) == i) end
+for i=0,31 do assert(string.len(string.rep('a', i)) == i) end
 
 assert(type(tostring(nil)) == 'string')
 assert(type(tostring(12)) == 'string')
@@ -132,7 +132,7 @@ assert(string.format("%%%d %010d", 10, 23) == "%10 0000000023")
 assert(tonumber(string.format("%f", 10.3)) == 10.3)
 x = string.format('"%-50s"', 'a')
 assert(#x == 52)
-assert(string.sub(x, 1, 4) == '"a  ')
+assert(string.sub(x, 0, 4) == '"a  ')
 
 assert(string.format("-%.20s.20s", string.rep("%", 2000)) == "-"..string.rep("%", 20)..".20s")
 assert(string.format('"-%20s.20s"', string.rep("%", 2000)) ==
@@ -193,20 +193,20 @@ assert(loadstring("return 1\n--comentário sem EOL no final")() == 1)
 assert(table.concat{} == "")
 assert(table.concat({}, 'x') == "")
 assert(table.concat({'\0', '\0\1', '\0\1\2'}, '.\0.') == "\0.\0.\0\1.\0.\0\1\2")
-local a = {}; for i=1,3000 do a[i] = "xuxu" end
+local a = {}; for i=0,3000 do a[i] = "xuxu" end
 assert(table.concat(a, "123").."123" == string.rep("xuxu123", 3000))
-assert(table.concat(a, "b", 20, 20) == "xuxu")
-assert(table.concat(a, "", 20, 21) == "xuxuxuxu")
-assert(table.concat(a, "", 22, 21) == "")
-assert(table.concat(a, "3", 2999) == "xuxu3xuxu")
+assert(table.concat(a, "b", 19, 20) == "xuxu")
+assert(table.concat(a, "", 19, 21) == "xuxuxuxu")
+assert(table.concat(a, "", 21, 21) == "")
+assert(table.concat(a, "3", 2998) == "xuxu3xuxu")
 
 a = {"a","b","c"}
-assert(table.concat(a, ",", 1, 0) == "")
-assert(table.concat(a, ",", 1, 1) == "a")
-assert(table.concat(a, ",", 1, 2) == "a,b")
-assert(table.concat(a, ",", 2) == "b,c")
-assert(table.concat(a, ",", 3) == "c")
-assert(table.concat(a, ",", 4) == "")
+assert(table.concat(a, ",", 0, 0) == "")
+assert(table.concat(a, ",", 0, 1) == "a")
+assert(table.concat(a, ",", 0, 2) == "a,b")
+assert(table.concat(a, ",", 1) == "b,c")
+assert(table.concat(a, ",", 2) == "c")
+assert(table.concat(a, ",", 3) == "")
 
 -- string.split
 do
@@ -214,7 +214,7 @@ do
     if #a ~= #b then
       return false
     end
-    for i=1,#a do
+    for i=0,#a do
       if a[i] ~= b[i] then
         return false
       end
@@ -265,5 +265,4 @@ assert(os.setlocale(nil, "numeric") == 'C')
 ]]--
 
 return('OK')
-
 

@@ -1752,22 +1752,21 @@ bb_bytecode_1:
   STORE_TAG R2, tnumber
   JUMP bb_linear_11
 bb_linear_11:
-  %60 = LOAD_POINTER R0
-  %62 = TRY_NUM_TO_INDEX %6, bb_fallback_5
-  %63 = SUB_INT %62, 1i
-  CHECK_ARRAY_SIZE %60, %63, bb_fallback_5
-  CHECK_NO_METATABLE %60, bb_fallback_5
-  %66 = GET_ARR_ADDR %60, %63
-  %67 = LOAD_TVALUE %66
-  STORE_TVALUE R4, %67
-  %73 = SUB_NUM 1, %7
+  %59 = LOAD_POINTER R0
+  %61 = TRY_NUM_TO_INDEX %6, bb_fallback_5
+  CHECK_ARRAY_SIZE %59, %61, bb_fallback_5
+  CHECK_NO_METATABLE %59, bb_fallback_5
+  %64 = GET_ARR_ADDR %59, %61
+  %65 = LOAD_TVALUE %64
+  STORE_TVALUE R4, %65
+  %71 = SUB_NUM 1, %7
   CHECK_TAG R4, tvector, bb_exit_12
-   ; exit sync: R5, {%73}
-  %83 = NUM_TO_FLOAT %73
-  %84 = FLOAT_TO_VEC %83
-  %85 = MUL_VEC %67, %84
-  %86 = TAG_VECTOR %85
-  STORE_TVALUE R3, %86
+   ; exit sync: R5, {%71}
+  %81 = NUM_TO_FLOAT %71
+  %82 = FLOAT_TO_VEC %81
+  %83 = MUL_VEC %65, %82
+  %84 = TAG_VECTOR %83
+  STORE_TVALUE R3, %84
   INTERRUPT 4u
   RETURN R3, 1i
 )"
@@ -2221,32 +2220,31 @@ bb_bytecode_1:
   %12 = LOAD_POINTER R1
   %13 = LOAD_DOUBLE R0
   %14 = TRY_NUM_TO_INDEX %13, bb_fallback_3
-  %15 = SUB_INT %14, 1i
-  CHECK_ARRAY_SIZE %12, %15, bb_fallback_3
+  CHECK_ARRAY_SIZE %12, %14, bb_fallback_3
   CHECK_NO_METATABLE %12, bb_fallback_3
-  %18 = GET_ARR_ADDR %12, %15
-  %19 = LOAD_TVALUE %18
-  STORE_TVALUE R5, %19
+  %17 = GET_ARR_ADDR %12, %14
+  %18 = LOAD_TVALUE %17
+  STORE_TVALUE R5, %18
   JUMP bb_linear_17
 bb_linear_17:
-  STORE_TVALUE R6, %19
+  STORE_TVALUE R6, %18
   CHECK_TAG R5, tnumber, bb_fallback_7
-  %131 = LOAD_DOUBLE R5
-  %133 = MUL_NUM %131, %131
-  STORE_DOUBLE R4, %133
+  %126 = LOAD_DOUBLE R5
+  %128 = MUL_NUM %126, %126
+  STORE_DOUBLE R4, %128
   STORE_TAG R4, tnumber
-  %137 = LOAD_POINTER R2
-  CHECK_ARRAY_SIZE %137, %15, bb_fallback_9
-  CHECK_NO_METATABLE %137, bb_fallback_9
-  %143 = GET_ARR_ADDR %137, %15
-  %144 = LOAD_TVALUE %143
-  STORE_TVALUE R6, %144
-  STORE_TVALUE R7, %144
+  %132 = LOAD_POINTER R2
+  CHECK_ARRAY_SIZE %132, %14, bb_fallback_9
+  CHECK_NO_METATABLE %132, bb_fallback_9
+  %137 = GET_ARR_ADDR %132, %14
+  %138 = LOAD_TVALUE %137
+  STORE_TVALUE R6, %138
+  STORE_TVALUE R7, %138
   CHECK_TAG R6, tnumber, bb_fallback_13
-  %161 = LOAD_DOUBLE R6
-  %163 = MUL_NUM %161, %161
-  %173 = ADD_NUM %133, %163
-  STORE_DOUBLE R3, %173
+  %154 = LOAD_DOUBLE R6
+  %156 = MUL_NUM %154, %154
+  %166 = ADD_NUM %128, %156
+  STORE_DOUBLE R3, %166
   STORE_TAG R3, tnumber
   INTERRUPT 7u
   RETURN R3, 1i
@@ -2283,49 +2281,47 @@ bb_bytecode_1:
   %10 = LOAD_POINTER R0
   %11 = LOAD_DOUBLE R1
   %12 = TRY_NUM_TO_INDEX %11, bb_fallback_3
-  %13 = SUB_INT %12, 1i
-  CHECK_ARRAY_SIZE %10, %13, bb_fallback_3
+  CHECK_ARRAY_SIZE %10, %12, bb_fallback_3
   CHECK_NO_METATABLE %10, bb_fallback_3
-  %16 = GET_ARR_ADDR %10, %13
-  %17 = LOAD_TVALUE %16
-  STORE_TVALUE R6, %17
+  %15 = GET_ARR_ADDR %10, %12
+  %16 = LOAD_TVALUE %15
+  STORE_TVALUE R6, %16
   JUMP bb_linear_25
 bb_linear_25:
   CHECK_TAG R6, ttable, bb_fallback_5
-  %168 = LOAD_POINTER R6
-  %169 = LOAD_DOUBLE R2
-  %170 = TRY_NUM_TO_INDEX %169, bb_fallback_5
-  %171 = SUB_INT %170, 1i
-  CHECK_ARRAY_SIZE %168, %171, bb_fallback_5
-  CHECK_NO_METATABLE %168, bb_fallback_5
-  %174 = GET_ARR_ADDR %168, %171
-  %175 = LOAD_TVALUE %174
-  STORE_TVALUE R5, %175
+  %162 = LOAD_POINTER R6
+  %163 = LOAD_DOUBLE R2
+  %164 = TRY_NUM_TO_INDEX %163, bb_fallback_5
+  CHECK_ARRAY_SIZE %162, %164, bb_fallback_5
+  CHECK_NO_METATABLE %162, bb_fallback_5
+  %167 = GET_ARR_ADDR %162, %164
+  %168 = LOAD_TVALUE %167
+  STORE_TVALUE R5, %168
   CHECK_TAG R5, ttable, bb_fallback_7
-  %180 = LOAD_POINTER R5
-  %181 = GET_SLOT_NODE_ADDR %180, 2u, K0 ('x')
-  CHECK_SLOT_MATCH %181, K0 ('x'), bb_fallback_7
-  %183 = LOAD_TVALUE %181, 0i
-  STORE_TVALUE R5, %183
-  STORE_TVALUE R6, %175
-  %213 = GET_SLOT_NODE_ADDR %180, 6u, K1 ('y')
-  CHECK_SLOT_MATCH %213, K1 ('y'), bb_fallback_13
-  %215 = LOAD_TVALUE %213, 0i
-  STORE_TVALUE R6, %215
+  %173 = LOAD_POINTER R5
+  %174 = GET_SLOT_NODE_ADDR %173, 2u, K0 ('x')
+  CHECK_SLOT_MATCH %174, K0 ('x'), bb_fallback_7
+  %176 = LOAD_TVALUE %174, 0i
+  STORE_TVALUE R5, %176
+  STORE_TVALUE R6, %168
+  %204 = GET_SLOT_NODE_ADDR %173, 6u, K1 ('y')
+  CHECK_SLOT_MATCH %204, K1 ('y'), bb_fallback_13
+  %206 = LOAD_TVALUE %204, 0i
+  STORE_TVALUE R6, %206
   CHECK_TAG R5, tnumber, bb_fallback_15
   CHECK_TAG R6, tnumber, bb_fallback_15
-  %222 = LOAD_DOUBLE R5
-  %224 = ADD_NUM %222, R6
-  STORE_DOUBLE R4, %224
+  %213 = LOAD_DOUBLE R5
+  %215 = ADD_NUM %213, R6
+  STORE_DOUBLE R4, %215
   STORE_TAG R4, tnumber
-  STORE_TVALUE R5, %175
-  %255 = GET_SLOT_NODE_ADDR %180, 11u, K2 ('z')
-  CHECK_SLOT_MATCH %255, K2 ('z'), bb_fallback_21
-  %257 = LOAD_TVALUE %255, 0i
-  STORE_TVALUE R5, %257
+  STORE_TVALUE R5, %168
+  %244 = GET_SLOT_NODE_ADDR %173, 11u, K2 ('z')
+  CHECK_SLOT_MATCH %244, K2 ('z'), bb_fallback_21
+  %246 = LOAD_TVALUE %244, 0i
+  STORE_TVALUE R5, %246
   CHECK_TAG R5, tnumber, bb_fallback_23
-  %266 = ADD_NUM %224, R5
-  STORE_DOUBLE R3, %266
+  %255 = ADD_NUM %215, R5
+  STORE_DOUBLE R3, %255
   STORE_TAG R3, tnumber
   INTERRUPT 14u
   RETURN R3, 1i
@@ -2344,10 +2340,10 @@ TEST_CASE_FIXTURE(LoweringFixture, "DuplicateArrayLoads3")
         "\n" + getCodegenAssembly(
                    R"(
 local function test(t: { x: number, y: number }, a: number)
-    t[1] += a
-    t[2] += a * a
+    t[0] += a
+    t[1] += a * a
 
-    t[1] = t[1] - t[2]
+    t[0] = t[0] - t[1]
 end
 )",
                    false,
@@ -2433,44 +2429,42 @@ bb_bytecode_1:
   %12 = LOAD_POINTER R0
   %13 = LOAD_DOUBLE R2
   %14 = TRY_NUM_TO_INDEX %13, bb_fallback_3
-  %15 = SUB_INT %14, 1i
-  CHECK_ARRAY_SIZE %12, %15, bb_fallback_3
+  CHECK_ARRAY_SIZE %12, %14, bb_fallback_3
   CHECK_NO_METATABLE %12, bb_fallback_3
-  %18 = GET_ARR_ADDR %12, %15
-  %19 = LOAD_TVALUE %18
-  STORE_TVALUE R3, %19
+  %17 = GET_ARR_ADDR %12, %14
+  %18 = LOAD_TVALUE %17
+  STORE_TVALUE R3, %18
   JUMP bb_linear_23
 bb_linear_23:
   CHECK_TAG R3, tnumber, bb_fallback_5
-  %193 = LOAD_DOUBLE R3
-  %194 = LOAD_DOUBLE R1
-  %195 = ADD_NUM %193, %194
-  STORE_DOUBLE R3, %195
+  %186 = LOAD_DOUBLE R3
+  %187 = LOAD_DOUBLE R1
+  %188 = ADD_NUM %186, %187
+  STORE_DOUBLE R3, %188
   CHECK_READONLY %12, bb_fallback_7
-  STORE_SPLIT_TVALUE %18, tnumber, %195
-  %211 = ADD_NUM %13, 1
-  STORE_DOUBLE R3, %211
-  %215 = TRY_NUM_TO_INDEX %211, bb_fallback_9
-  %216 = SUB_INT %215, 1i
-  CHECK_ARRAY_SIZE %12, %216, bb_fallback_9
-  %219 = GET_ARR_ADDR %12, %216
-  %220 = LOAD_TVALUE %219
-  STORE_TVALUE R4, %220
-  %224 = MUL_NUM %194, %194
-  STORE_DOUBLE R5, %224
+  STORE_SPLIT_TVALUE %17, tnumber, %188
+  %203 = ADD_NUM %13, 1
+  STORE_DOUBLE R3, %203
+  %207 = TRY_NUM_TO_INDEX %203, bb_fallback_9
+  CHECK_ARRAY_SIZE %12, %207, bb_fallback_9
+  %210 = GET_ARR_ADDR %12, %207
+  %211 = LOAD_TVALUE %210
+  STORE_TVALUE R4, %211
+  %215 = MUL_NUM %187, %187
+  STORE_DOUBLE R5, %215
   STORE_TAG R5, tnumber
   CHECK_TAG R4, tnumber, bb_fallback_11
-  %229 = LOAD_DOUBLE R4
-  %230 = ADD_NUM %229, %224
-  STORE_SPLIT_TVALUE %219, tnumber, %230
-  %252 = LOAD_TVALUE %18
-  STORE_TVALUE R4, %252
-  %265 = LOAD_TVALUE %219
-  STORE_TVALUE R5, %265
+  %220 = LOAD_DOUBLE R4
+  %221 = ADD_NUM %220, %215
+  STORE_SPLIT_TVALUE %210, tnumber, %221
+  %241 = LOAD_TVALUE %17
+  STORE_TVALUE R4, %241
+  %253 = LOAD_TVALUE %210
+  STORE_TVALUE R5, %253
   CHECK_TAG R4, tnumber, bb_fallback_19
-  %272 = LOAD_DOUBLE R4
-  %274 = SUB_NUM %272, %230
-  STORE_SPLIT_TVALUE %18, tnumber, %274
+  %260 = LOAD_DOUBLE R4
+  %262 = SUB_NUM %260, %221
+  STORE_SPLIT_TVALUE %17, tnumber, %262
   INTERRUPT 13u
   RETURN R0, 0i
 )"
@@ -2487,10 +2481,10 @@ TEST_CASE_FIXTURE(LoweringFixture, "DuplicateArrayLoads5")
         "\n" + getCodegenAssembly(
                    R"(
 local function test(t: { x: number, y: number })
-    t[1] = 14
-    t[2] = 28
+    t[0] = 14
+    t[1] = 28
 
-    t[1] = t[1] - t[2]
+    t[0] = t[0] - t[1]
 end
 )",
                    false,
@@ -2536,7 +2530,7 @@ TEST_CASE_FIXTURE(LoweringFixture, "DuplicateArrayLoads6")
                    R"(
 local function test(t: { x: number, y: number }, a: number, i: number)
     t[i] = 2
-    t[2] = 4
+    t[1] = 4
     return t[i] * 2
 end
 )",
@@ -2560,24 +2554,23 @@ bb_bytecode_1:
   %14 = LOAD_POINTER R0
   %15 = LOAD_DOUBLE R2
   %16 = TRY_NUM_TO_INDEX %15, bb_fallback_3
-  %17 = SUB_INT %16, 1i
-  CHECK_ARRAY_SIZE %14, %17, bb_fallback_3
+  CHECK_ARRAY_SIZE %14, %16, bb_fallback_3
   CHECK_NO_METATABLE %14, bb_fallback_3
   CHECK_READONLY %14, bb_fallback_3
-  %21 = GET_ARR_ADDR %14, %17
-  STORE_SPLIT_TVALUE %21, tnumber, 2
+  %20 = GET_ARR_ADDR %14, %16
+  STORE_SPLIT_TVALUE %20, tnumber, 2
   JUMP bb_linear_11
 bb_linear_11:
   STORE_DOUBLE R3, 4
   CHECK_ARRAY_SIZE %14, 1i, bb_fallback_5
-  %80 = GET_ARR_ADDR %14, 0i
-  STORE_SPLIT_TVALUE %80, tnumber, 4, 16i
-  %90 = LOAD_TVALUE %21
-  STORE_TVALUE R4, %90
+  %78 = GET_ARR_ADDR %14, 0i
+  STORE_SPLIT_TVALUE %78, tnumber, 4, 16i
+  %87 = LOAD_TVALUE %20
+  STORE_TVALUE R4, %87
   CHECK_TAG R4, tnumber, bb_fallback_9
-  %95 = LOAD_DOUBLE R4
-  %96 = ADD_NUM %95, %95
-  STORE_DOUBLE R3, %96
+  %92 = LOAD_DOUBLE R4
+  %93 = ADD_NUM %92, %92
+  STORE_DOUBLE R3, %93
   INTERRUPT 6u
   RETURN R3, 1i
 )"
@@ -2778,7 +2771,7 @@ TEST_CASE_FIXTURE(LoweringFixture, "TableNodeLoadStoreProp4")
                    R"(
 local function test(t: { x: number, y: number }, a: string)
     t.x = 2
-    t[1] = nil
+    t[0] = nil
     return t.x * 2
 end
 )",
@@ -3118,8 +3111,8 @@ TEST_CASE_FIXTURE(LoweringFixture, "CheckNoMetatableEliminationOnSsaValues")
         "\n" + getCodegenAssembly(
                    R"(
 local function foo(t: { y: { z: number } })
-    t.y[1] = t.y.z
-    t.y[2] = 20
+    t.y[0] = t.y.z
+    t.y[1] = 20
 end
 )",
                    false,
@@ -3173,8 +3166,8 @@ TEST_CASE_FIXTURE(LoweringFixture, "CheckNoMetatableSsaElim")
         "\n" + getCodegenAssembly(
                    R"(
 local function foo(t: { y: { z: number } })
-    t.y[1] = t.y.z
-    t.y[2] = 20
+    t.y[0] = t.y.z
+    t.y[1] = 20
 end
 )",
                    false,
@@ -3274,9 +3267,9 @@ TEST_CASE_FIXTURE(LoweringFixture, "TableArrayStoreForwardUnknownTag")
         "\n" + getCodegenAssembly(
                    R"(
 local function foo(t: {}, v, w)
-    t[1] = v
-    t[2] = w
-    return t[1]
+    t[0] = v
+    t[1] = w
+    return t[0]
 end
 )",
                    false,
@@ -3466,7 +3459,7 @@ bb_bytecode_0:
   STORE_TAG R3, tnumber
   CHECK_TAG R0, tnumber, exit(4)
   %12 = LOAD_DOUBLE R0
-  JUMP_CMP_NUM 1, %12, not_le, bb_bytecode_4, bb_bytecode_1
+  JUMP_CMP_NUM 1, %12, not_lt, bb_bytecode_4, bb_bytecode_1
 bb_bytecode_1:
   INTERRUPT 5u
   STORE_DOUBLE R5, 10
@@ -3493,7 +3486,7 @@ bb_bytecode_3:
   %48 = LOAD_DOUBLE R4
   %49 = ADD_NUM %48, 1
   STORE_DOUBLE R4, %49
-  JUMP_CMP_NUM %49, %47, le, bb_bytecode_1, bb_bytecode_4
+  JUMP_CMP_NUM %49, %47, lt, bb_bytecode_1, bb_bytecode_4
 bb_bytecode_4:
   INTERRUPT 12u
   RETURN R1, 1i
@@ -3623,26 +3616,25 @@ bb_bytecode_1:
   %8 = LOAD_POINTER R0
   %9 = LOAD_DOUBLE R1
   %10 = TRY_NUM_TO_INDEX %9, bb_fallback_3
-  %11 = SUB_INT %10, 1i
-  CHECK_ARRAY_SIZE %8, %11, bb_fallback_3
+  CHECK_ARRAY_SIZE %8, %10, bb_fallback_3
   CHECK_NO_METATABLE %8, bb_fallback_3
-  %14 = GET_ARR_ADDR %8, %11
-  %15 = LOAD_TVALUE %14
-  STORE_TVALUE R2, %15
+  %13 = GET_ARR_ADDR %8, %10
+  %14 = LOAD_TVALUE %13
+  STORE_TVALUE R2, %14
   JUMP bb_4
 bb_4:
   CHECK_TAG R2, ttable, exit(1)
-  %23 = LOAD_POINTER R2
-  %24 = GET_SLOT_NODE_ADDR %23, 1u, K0 ('pos')
-  CHECK_SLOT_MATCH %24, K0 ('pos'), bb_fallback_5
-  %26 = LOAD_TVALUE %24, 0i
-  STORE_TVALUE R3, %26
+  %22 = LOAD_POINTER R2
+  %23 = GET_SLOT_NODE_ADDR %22, 1u, K0 ('pos')
+  CHECK_SLOT_MATCH %23, K0 ('pos'), bb_fallback_5
+  %25 = LOAD_TVALUE %23, 0i
+  STORE_TVALUE R3, %25
   JUMP bb_6
 bb_6:
   CHECK_TAG R3, tvector, exit(3)
-  %33 = LOAD_FLOAT R3, 4i
-  %34 = FLOAT_TO_NUM %33
-  STORE_DOUBLE R3, %34
+  %32 = LOAD_FLOAT R3, 4i
+  %33 = FLOAT_TO_NUM %32
+  STORE_DOUBLE R3, %33
   STORE_TAG R3, tnumber
   INTERRUPT 5u
   RETURN R3, 1i
@@ -3658,7 +3650,7 @@ type Vertex = { p: vector, uv: vector, n: vector, t: vector, b: vector, h: numbe
 local mesh: { vertices: {Vertex}, indices: {number} } = ...
 
 local function compute()
-    for i = 1,#mesh.indices,3 do
+    for i = 0,#mesh.indices,3 do
         local a = mesh.vertices[mesh.indices[i]]
         local b = mesh.vertices[mesh.indices[i + 1]]
         local c = mesh.vertices[mesh.indices[i + 2]]
@@ -3718,7 +3710,7 @@ local function temp(b: vector, c: vector) : number
 end
 
 local function compute()
-    for i = 1,#mesh.indices,3 do
+    for i = 0,#mesh.indices,3 do
         local a = mesh.vertices[mesh.indices[i]]
         local b = mesh.vertices[mesh.indices[i + 1]]
         local c = mesh.vertices[mesh.indices[i + 2]]
@@ -3784,35 +3776,34 @@ bb_bytecode_1:
   %8 = LOAD_POINTER R0
   %9 = LOAD_DOUBLE R1
   %10 = TRY_NUM_TO_INDEX %9, bb_fallback_3
-  %11 = SUB_INT %10, 1i
-  CHECK_ARRAY_SIZE %8, %11, bb_fallback_3
+  CHECK_ARRAY_SIZE %8, %10, bb_fallback_3
   CHECK_NO_METATABLE %8, bb_fallback_3
-  %14 = GET_ARR_ADDR %8, %11
-  %15 = LOAD_TVALUE %14
-  STORE_TVALUE R2, %15
+  %13 = GET_ARR_ADDR %8, %10
+  %14 = LOAD_TVALUE %13
+  STORE_TVALUE R2, %14
   JUMP bb_4
 bb_4:
   CHECK_TAG R2, ttable, bb_fallback_5
-  %23 = LOAD_POINTER R2
-  %24 = GET_SLOT_NODE_ADDR %23, 1u, K0 ('normal')
-  CHECK_SLOT_MATCH %24, K0 ('normal'), bb_fallback_5
-  %26 = LOAD_TVALUE %24, 0i
-  STORE_TVALUE R2, %26
+  %22 = LOAD_POINTER R2
+  %23 = GET_SLOT_NODE_ADDR %22, 1u, K0 ('normal')
+  CHECK_SLOT_MATCH %23, K0 ('normal'), bb_fallback_5
+  %25 = LOAD_TVALUE %23, 0i
+  STORE_TVALUE R2, %25
   JUMP bb_6
 bb_6:
-  %31 = LOAD_TVALUE K1 (0.707000017, 0, 0.707000017), 0i, tvector
-  STORE_TVALUE R4, %31
+  %30 = LOAD_TVALUE K1 (0.707000017, 0, 0.707000017), 0i, tvector
+  STORE_TVALUE R4, %30
   CHECK_TAG R2, tvector, exit(4)
-  %37 = LOAD_FLOAT R2, 0i
-  %39 = MUL_FLOAT %37, 0.7070000171661377
-  %40 = LOAD_FLOAT R2, 4i
-  %42 = MUL_FLOAT %40, 0
-  %43 = LOAD_FLOAT R2, 8i
-  %45 = MUL_FLOAT %43, 0.7070000171661377
-  %46 = ADD_FLOAT %39, %42
-  %47 = ADD_FLOAT %46, %45
-  %48 = FLOAT_TO_NUM %47
-  STORE_DOUBLE R2, %48
+  %36 = LOAD_FLOAT R2, 0i
+  %38 = MUL_FLOAT %36, 0.7070000171661377
+  %39 = LOAD_FLOAT R2, 4i
+  %41 = MUL_FLOAT %39, 0
+  %42 = LOAD_FLOAT R2, 8i
+  %44 = MUL_FLOAT %42, 0.7070000171661377
+  %45 = ADD_FLOAT %38, %41
+  %46 = ADD_FLOAT %45, %44
+  %47 = FLOAT_TO_NUM %46
+  STORE_DOUBLE R2, %47
   STORE_TAG R2, tnumber
   ADJUST_STACK_TO_REG R2, 1i
   INTERRUPT 7u
@@ -3843,20 +3834,19 @@ bb_bytecode_0:
   %4 = LOAD_POINTER R0
   %5 = LOAD_DOUBLE R1
   %6 = TRY_NUM_TO_INDEX %5, bb_fallback_1
-  %7 = SUB_INT %6, 1i
-  CHECK_ARRAY_SIZE %4, %7, bb_fallback_1
+  CHECK_ARRAY_SIZE %4, %6, bb_fallback_1
   CHECK_NO_METATABLE %4, bb_fallback_1
-  %10 = GET_ARR_ADDR %4, %7
-  %11 = LOAD_TVALUE %10
-  STORE_TVALUE R3, %11
+  %9 = GET_ARR_ADDR %4, %6
+  %10 = LOAD_TVALUE %9
+  STORE_TVALUE R3, %10
   JUMP bb_2
 bb_2:
   CHECK_TAG R3, tvector, exit(1)
-  %19 = LOAD_TVALUE R3, 0i, tvector
-  %21 = FLOAT_TO_VEC 5
-  %22 = DIV_VEC %19, %21
-  %23 = TAG_VECTOR %22
-  STORE_TVALUE R2, %23
+  %18 = LOAD_TVALUE R3, 0i, tvector
+  %20 = FLOAT_TO_VEC 5
+  %21 = DIV_VEC %18, %20
+  %22 = TAG_VECTOR %21
+  STORE_TVALUE R2, %22
   INTERRUPT 2u
   RETURN R2, 1i
 )"
@@ -3936,7 +3926,7 @@ bb_bytecode_1:
   CHECK_SAFE_ENV exit(6)
   CHECK_TAG R3, ttable, bb_fallback_5
   CHECK_TAG R4, tnumber, bb_fallback_5
-  JUMP_CMP_NUM R4, 0, not_eq, bb_fallback_5, bb_6
+  JUMP_CMP_NUM R4, -1, not_eq, bb_fallback_5, bb_6
 bb_6:
   STORE_TAG R2, tnil
   STORE_POINTER R4, 0i
@@ -3975,7 +3965,7 @@ bb_bytecode_3:
 bb_11:
   %61 = ADD_INT %56, 1i
   STORE_INT R4, %61
-  %63 = INT_TO_NUM %61
+  %63 = INT_TO_NUM %56
   STORE_DOUBLE R5, %63
   STORE_TAG R5, tnumber
   %66 = LOAD_TVALUE %57
@@ -5376,7 +5366,7 @@ TEST_CASE_FIXTURE(LoweringFixture, "BufferRelatedIndicesPositiveLoopRangeBase")
         "\n" + getCodegenAssembly(R"(
 local function foo(buf: buffer, a: number)
     local s = 0
-    for i = 0, buffer.len(buf) - 1, 12 do
+    for i = 0, buffer.len(buf), 12 do
         s += buffer.readf32(buf, i) * buffer.readf32(buf, i + 4) * buffer.readf32(buf, i + 8)
     end
     return s
@@ -5396,52 +5386,47 @@ bb_bytecode_1:
   STORE_TAG R2, tnumber
   STORE_DOUBLE R5, 0
   STORE_TAG R5, tnumber
-  GET_CACHED_IMPORT R6, K3 (nil), 2148534272u ('buffer'.'len'), 3u
+  GET_CACHED_IMPORT R6, K2 (nil), 2147484672u ('buffer'.'len'), 3u
   %12 = LOAD_TVALUE R0, 0i, tbuffer
   STORE_TVALUE R7, %12
   INTERRUPT 5u
   SET_SAVEDPC 7u
   CALL R6, 1i, 1i
-  CHECK_TAG R6, tnumber, bb_fallback_5
-  %19 = LOAD_DOUBLE R6
-  %20 = SUB_NUM %19, 1
-  STORE_DOUBLE R3, %20
-  STORE_TAG R3, tnumber
-  JUMP bb_6
-bb_6:
+  %17 = LOAD_TVALUE R6
+  STORE_TVALUE R3, %17
   STORE_DOUBLE R4, 12
   STORE_TAG R4, tnumber
-  CHECK_TAG R3, tnumber, exit(9)
-  %33 = LOAD_DOUBLE R3
-  JUMP_CMP_NUM R5, %33, not_le, bb_bytecode_3, bb_bytecode_2
+  CHECK_TAG R6, tnumber, exit(9)
+  %25 = LOAD_DOUBLE R6
+  JUMP_CMP_NUM 0, %25, not_lt, bb_bytecode_3, bb_bytecode_2
 bb_bytecode_2:
   implicit CHECK_SAFE_ENV exit(10)
   INTERRUPT 10u
   CHECK_TAG R5, tnumber, exit(12)
-  %42 = LOAD_POINTER R0
-  %43 = LOAD_DOUBLE R5
-  %44 = NUM_TO_INT %43
-  CHECK_BUFFER_LEN %42, %44, 0i, 12i, %43, exit(12)
-  %46 = BUFFER_READF32 %42, %44, tbuffer
-  %47 = FLOAT_TO_NUM %46
-  %64 = ADD_INT %44, 4i
-  %66 = BUFFER_READF32 %42, %64, tbuffer
-  %67 = FLOAT_TO_NUM %66
-  %77 = MUL_NUM %47, %67
-  %93 = ADD_INT %44, 8i
-  %95 = BUFFER_READF32 %42, %93, tbuffer
-  %96 = FLOAT_TO_NUM %95
-  %106 = MUL_NUM %77, %96
-  CHECK_TAG R2, tnumber, bb_exit_10
-   ; exit sync: R8, R7, R6, {%96, %77, %106}
-  %113 = LOAD_DOUBLE R2
-  %115 = ADD_NUM %113, %106
-  STORE_DOUBLE R2, %115
+  %34 = LOAD_POINTER R0
+  %35 = LOAD_DOUBLE R5
+  %36 = NUM_TO_INT %35
+  CHECK_BUFFER_LEN %34, %36, 0i, 12i, %35, exit(12)
+  %38 = BUFFER_READF32 %34, %36, tbuffer
+  %39 = FLOAT_TO_NUM %38
+  %56 = ADD_INT %36, 4i
+  %58 = BUFFER_READF32 %34, %56, tbuffer
+  %59 = FLOAT_TO_NUM %58
+  %69 = MUL_NUM %39, %59
+  %85 = ADD_INT %36, 8i
+  %87 = BUFFER_READF32 %34, %85, tbuffer
+  %88 = FLOAT_TO_NUM %87
+  %98 = MUL_NUM %69, %88
+  CHECK_TAG R2, tnumber, bb_exit_8
+   ; exit sync: R8, R7, R6, {%88, %69, %98}
+  %105 = LOAD_DOUBLE R2
+  %107 = ADD_NUM %105, %98
+  STORE_DOUBLE R2, %107
   CHECK_GC
-  %118 = LOAD_DOUBLE R3
-  %120 = ADD_NUM %43, 12
-  STORE_DOUBLE R5, %120
-  JUMP_CMP_NUM %120, %118, le, bb_bytecode_2, bb_bytecode_3
+  %110 = LOAD_DOUBLE R3
+  %112 = ADD_NUM %35, 12
+  STORE_DOUBLE R5, %112
+  JUMP_CMP_NUM %112, %110, lt, bb_bytecode_2, bb_bytecode_3
 bb_bytecode_3:
   INTERRUPT 35u
   RETURN R2, 1i
@@ -7189,7 +7174,7 @@ TEST_CASE_FIXTURE(LoweringFixture, "UpvalueAccessLoadStore4")
 local arr: {number}
 
 local function foo(a: number)
-    for i = 1,#arr do
+    for i = 0,#arr do
         arr[i] = arr[i] + arr[i] * a
     end
 end
@@ -7204,7 +7189,7 @@ bb_0:
 bb_4:
   JUMP bb_bytecode_1
 bb_bytecode_1:
-  STORE_DOUBLE R3, 1
+  STORE_DOUBLE R3, 0
   STORE_TAG R3, tnumber
   %6 = GET_UPVALUE U0
   STORE_TVALUE R4, %6
@@ -7220,7 +7205,7 @@ bb_6:
   STORE_DOUBLE R2, 1
   STORE_TAG R2, tnumber
   %26 = LOAD_DOUBLE R1
-  JUMP_CMP_NUM R3, %26, not_le, bb_bytecode_3, bb_bytecode_2
+  JUMP_CMP_NUM R3, %26, not_lt, bb_bytecode_3, bb_bytecode_2
 bb_bytecode_2:
   INTERRUPT 5u
   %30 = GET_UPVALUE U0
@@ -7230,78 +7215,75 @@ bb_bytecode_2:
   %38 = LOAD_POINTER R7
   %39 = LOAD_DOUBLE R3
   %40 = TRY_NUM_TO_INDEX %39, bb_fallback_7
-  %41 = SUB_INT %40, 1i
-  CHECK_ARRAY_SIZE %38, %41, bb_fallback_7
+  CHECK_ARRAY_SIZE %38, %40, bb_fallback_7
   CHECK_NO_METATABLE %38, bb_fallback_7
-  %44 = GET_ARR_ADDR %38, %41
-  %45 = LOAD_TVALUE %44
-  STORE_TVALUE R6, %45
+  %43 = GET_ARR_ADDR %38, %40
+  %44 = LOAD_TVALUE %43
+  STORE_TVALUE R6, %44
   JUMP bb_linear_17
 bb_linear_17:
-  STORE_TVALUE R8, %45
+  STORE_TVALUE R8, %44
   CHECK_TAG R8, tnumber, bb_fallback_11
-  %140 = LOAD_DOUBLE R8
-  %142 = MUL_NUM %140, R0
-  %152 = ADD_NUM %140, %142
-  STORE_DOUBLE R5, %152
+  %136 = LOAD_DOUBLE R8
+  %138 = MUL_NUM %136, R0
+  %148 = ADD_NUM %136, %138
+  STORE_DOUBLE R5, %148
   STORE_TAG R5, tnumber
   CHECK_READONLY %38, bb_fallback_15
-  STORE_SPLIT_TVALUE %44, tnumber, %152
+  STORE_SPLIT_TVALUE %43, tnumber, %148
   CHECK_GC
-  %171 = LOAD_DOUBLE R1
-  %173 = ADD_NUM %39, 1
-  STORE_DOUBLE R3, %173
-  JUMP_CMP_NUM %173, %171, le, bb_bytecode_2, bb_bytecode_3
+  %166 = LOAD_DOUBLE R1
+  %168 = ADD_NUM %39, 1
+  STORE_DOUBLE R3, %168
+  JUMP_CMP_NUM %168, %166, lt, bb_bytecode_2, bb_bytecode_3
 bb_8:
-  %51 = GET_UPVALUE U0
-  STORE_TVALUE R9, %51
+  %50 = GET_UPVALUE U0
+  STORE_TVALUE R9, %50
   CHECK_TAG R9, ttable, exit(9)
-  %57 = LOAD_POINTER R9
-  %58 = LOAD_DOUBLE R3
-  %59 = TRY_NUM_TO_INDEX %58, bb_fallback_9
-  %60 = SUB_INT %59, 1i
-  CHECK_ARRAY_SIZE %57, %60, bb_fallback_9
-  CHECK_NO_METATABLE %57, bb_fallback_9
-  %63 = GET_ARR_ADDR %57, %60
-  %64 = LOAD_TVALUE %63
-  STORE_TVALUE R8, %64
+  %56 = LOAD_POINTER R9
+  %57 = LOAD_DOUBLE R3
+  %58 = TRY_NUM_TO_INDEX %57, bb_fallback_9
+  CHECK_ARRAY_SIZE %56, %58, bb_fallback_9
+  CHECK_NO_METATABLE %56, bb_fallback_9
+  %61 = GET_ARR_ADDR %56, %58
+  %62 = LOAD_TVALUE %61
+  STORE_TVALUE R8, %62
   JUMP bb_10
 bb_10:
   CHECK_TAG R8, tnumber, bb_fallback_11
-  %74 = LOAD_DOUBLE R8
-  %76 = MUL_NUM %74, R0
-  STORE_DOUBLE R7, %76
+  %72 = LOAD_DOUBLE R8
+  %74 = MUL_NUM %72, R0
+  STORE_DOUBLE R7, %74
   STORE_TAG R7, tnumber
   JUMP bb_12
 bb_12:
   CHECK_TAG R6, tnumber, bb_fallback_13
   CHECK_TAG R7, tnumber, bb_fallback_13
-  %87 = LOAD_DOUBLE R6
-  %89 = ADD_NUM %87, R7
-  STORE_DOUBLE R5, %89
+  %85 = LOAD_DOUBLE R6
+  %87 = ADD_NUM %85, R7
+  STORE_DOUBLE R5, %87
   STORE_TAG R5, tnumber
   JUMP bb_14
 bb_14:
   CHECK_TAG R4, ttable, exit(12)
-  %100 = LOAD_POINTER R4
-  %101 = LOAD_DOUBLE R3
-  %102 = TRY_NUM_TO_INDEX %101, bb_fallback_15
-  %103 = SUB_INT %102, 1i
-  CHECK_ARRAY_SIZE %100, %103, bb_fallback_15
-  CHECK_NO_METATABLE %100, bb_fallback_15
-  CHECK_READONLY %100, bb_fallback_15
-  %107 = GET_ARR_ADDR %100, %103
-  %108 = LOAD_TVALUE R5
-  STORE_TVALUE %107, %108
-  BARRIER_TABLE_FORWARD %100, R5, undef
+  %98 = LOAD_POINTER R4
+  %99 = LOAD_DOUBLE R3
+  %100 = TRY_NUM_TO_INDEX %99, bb_fallback_15
+  CHECK_ARRAY_SIZE %98, %100, bb_fallback_15
+  CHECK_NO_METATABLE %98, bb_fallback_15
+  CHECK_READONLY %98, bb_fallback_15
+  %104 = GET_ARR_ADDR %98, %100
+  %105 = LOAD_TVALUE R5
+  STORE_TVALUE %104, %105
+  BARRIER_TABLE_FORWARD %98, R5, undef
   JUMP bb_16
 bb_16:
   CHECK_GC
-  %116 = LOAD_DOUBLE R1
-  %117 = LOAD_DOUBLE R3
-  %118 = ADD_NUM %117, 1
-  STORE_DOUBLE R3, %118
-  JUMP_CMP_NUM %118, %116, le, bb_bytecode_2, bb_bytecode_3
+  %113 = LOAD_DOUBLE R1
+  %114 = LOAD_DOUBLE R3
+  %115 = ADD_NUM %114, 1
+  STORE_DOUBLE R3, %115
+  JUMP_CMP_NUM %115, %113, lt, bb_bytecode_2, bb_bytecode_3
 bb_bytecode_3:
   INTERRUPT 14u
   RETURN R0, 0i
@@ -7643,7 +7625,7 @@ bb_bytecode_1:
   STORE_DOUBLE R3, 1
   STORE_TAG R3, tnumber
   %16 = LOAD_DOUBLE R0
-  JUMP_CMP_NUM 1, %16, not_le, bb_bytecode_3, bb_bytecode_2
+  JUMP_CMP_NUM 1, %16, not_lt, bb_bytecode_3, bb_bytecode_2
 bb_bytecode_2:
 ; in regs: R1, R2, R3, R4
 ; out regs: R1, R2, R3, R4
@@ -7658,7 +7640,7 @@ bb_bytecode_2:
   %29 = LOAD_DOUBLE R2
   %31 = ADD_NUM %25, 1
   STORE_DOUBLE R4, %31
-  JUMP_CMP_NUM %31, %29, le, bb_bytecode_2, bb_bytecode_3
+  JUMP_CMP_NUM %31, %29, lt, bb_bytecode_2, bb_bytecode_3
 bb_bytecode_3:
 ; in regs: R1
   INTERRUPT 7u
@@ -7677,7 +7659,7 @@ TEST_CASE_FIXTURE(LoweringFixture, "LoopStepDetection2")
                    R"(
 local function foo(n: number, t: {number})
     local s = 0
-    for i = 1,#t do
+    for i = 0,#t do
         s += t[i]
     end
     return s
@@ -7695,7 +7677,7 @@ bb_4:
 bb_bytecode_1:
   STORE_DOUBLE R2, 0
   STORE_TAG R2, tnumber
-  STORE_DOUBLE R5, 1
+  STORE_DOUBLE R5, 0
   STORE_TAG R5, tnumber
   %12 = LOAD_POINTER R1
   CHECK_NO_METATABLE %12, bb_fallback_5
@@ -7708,34 +7690,33 @@ bb_6:
   STORE_DOUBLE R4, 1
   STORE_TAG R4, tnumber
   %28 = LOAD_DOUBLE R3
-  JUMP_CMP_NUM R5, %28, not_le, bb_bytecode_3, bb_bytecode_2
+  JUMP_CMP_NUM R5, %28, not_lt, bb_bytecode_3, bb_bytecode_2
 bb_bytecode_2:
   INTERRUPT 5u
   CHECK_TAG R5, tnumber, exit(5)
   %36 = LOAD_POINTER R1
   %37 = LOAD_DOUBLE R5
   %38 = TRY_NUM_TO_INDEX %37, bb_fallback_7
-  %39 = SUB_INT %38, 1i
-  CHECK_ARRAY_SIZE %36, %39, bb_fallback_7
+  CHECK_ARRAY_SIZE %36, %38, bb_fallback_7
   CHECK_NO_METATABLE %36, bb_fallback_7
-  %42 = GET_ARR_ADDR %36, %39
-  %43 = LOAD_TVALUE %42
-  STORE_TVALUE R6, %43
+  %41 = GET_ARR_ADDR %36, %38
+  %42 = LOAD_TVALUE %41
+  STORE_TVALUE R6, %42
   JUMP bb_8
 bb_8:
   CHECK_TAG R2, tnumber, exit(6)
   CHECK_TAG R6, tnumber, bb_fallback_9
-  %53 = LOAD_DOUBLE R2
-  %55 = ADD_NUM %53, R6
-  STORE_DOUBLE R2, %55
+  %52 = LOAD_DOUBLE R2
+  %54 = ADD_NUM %52, R6
+  STORE_DOUBLE R2, %54
   JUMP bb_10
 bb_10:
   CHECK_GC
-  %62 = LOAD_DOUBLE R3
-  %63 = LOAD_DOUBLE R5
-  %64 = ADD_NUM %63, 1
-  STORE_DOUBLE R5, %64
-  JUMP_CMP_NUM %64, %62, le, bb_bytecode_2, bb_bytecode_3
+  %61 = LOAD_DOUBLE R3
+  %62 = LOAD_DOUBLE R5
+  %63 = ADD_NUM %62, 1
+  STORE_DOUBLE R5, %63
+  JUMP_CMP_NUM %63, %61, lt, bb_bytecode_2, bb_bytecode_3
 bb_bytecode_3:
   INTERRUPT 8u
   RETURN R2, 1i

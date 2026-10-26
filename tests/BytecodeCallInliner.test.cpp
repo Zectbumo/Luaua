@@ -165,7 +165,7 @@ struct BytecodeInlinerFixture
     {
         std::string bytecode = bcb.getBytecode();
         const char* data = bytecode.data();
-        size_t offset = 2; // skip versions
+        size_t offset = 3; // skip Luaua marker and bytecode/type versions
         std::vector<std::string> result;
         uint32_t stringsCount = readVarInt(data, offset);
         for (uint32_t i = 0; i < stringsCount; i++)
@@ -691,8 +691,7 @@ TEST_CASE_FIXTURE(BytecodeInlinerFixture, "vararg_func_vararg_multi_usage")
         LOADK R2 K1 [2]
         GETVARARGS R3 -1
         SETLIST R0 R1 -1 [1]
-        LOADK R2 K2 [3]
-        GETTABLE R1 R0 R2
+        GETTABLEN R1 R0 2
         RETURN R1 1
 
         Function 1 (caller):
@@ -708,7 +707,7 @@ TEST_CASE_FIXTURE(BytecodeInlinerFixture, "vararg_func_vararg_multi_usage")
         "\n" + inlineAndPrint(R"(
         local function inlinee(...)
             local t = {1, 2, ...}
-            return t[3]
+            return t[2]
         end
 
         local function caller()
@@ -729,7 +728,7 @@ MOVE R7 R1
 MOVE R8 R2
 MOVE R9 R3
 SETLIST R4 R5 5 [1]
-LOADK R6 K5 [3]
+LOADK R6 K4 [2]
 GETTABLE R5 R4 R6
 MOVE R0 R5
 RETURN R0 1
@@ -750,8 +749,7 @@ TEST_CASE_FIXTURE(BytecodeInlinerFixture, "vararg_func_vararg_multi_usage_2")
         MOVE R3 R0
         GETVARARGS R4 -1
         SETLIST R1 R2 -1 [1]
-        LOADK R3 K1 [3]
-        GETTABLE R2 R1 R3
+        GETTABLEN R2 R1 2
         RETURN R2 1
 
         Function 1 (caller):
@@ -767,7 +765,7 @@ TEST_CASE_FIXTURE(BytecodeInlinerFixture, "vararg_func_vararg_multi_usage_2")
         "\n" + inlineAndPrint(R"(
         local function inlinee(a, ...)
             local t = {1, a, ...}
-            return t[3]
+            return t[2]
         end
 
         local function caller()
@@ -787,7 +785,7 @@ MOVE R7 R1
 MOVE R8 R2
 MOVE R9 R3
 SETLIST R5 R6 4 [1]
-LOADK R7 K4 [3]
+LOADK R7 K4 [2]
 GETTABLE R6 R5 R7
 MOVE R0 R6
 RETURN R0 1

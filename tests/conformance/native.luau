@@ -279,7 +279,7 @@ end
 assert(pcall(fuzzfail26))
 
 local function fuzzfail27(...)
-  for _ = 1,67 do
+  for _ = 1,68 do
     assert(_, _ .. _ or _, {x=_ .. _ // _ .. _ or _ .. _,})
   end
 end
@@ -304,7 +304,7 @@ local function arraySizeInv1()
 
   table.insert(t, 3)
 
-  return t[10]
+  return t[9]
 end
 
 assert(arraySizeInv1() == true)
@@ -315,7 +315,7 @@ local function arraySizeInv2()
   local u = {a = t}
   table.insert(u.a, 3) -- aliased modifiction of 't' register through other value
 
-  return t[10]
+  return t[9]
 end
 
 assert(arraySizeInv2() == true)
@@ -329,7 +329,7 @@ local function nilInvalidatesSlot()
 
   local t1, t2 = tabs()
 
-  for i=1,2 do
+  for i=1,3 do
     local a = t1.x
     t2.x = nil
     local b = t1.x
@@ -341,18 +341,18 @@ end
 nilInvalidatesSlot()
 
 local function arraySizeOpt1(a)
-  a[1] += 2
-  a[1] *= 3
+  a[0] += 2
+  a[0] *= 3
 
   table.insert(a, 3)
   table.insert(a, 4)
   table.insert(a, 5)
   table.insert(a, 6)
 
-  a[1] += 4
-  a[1] *= 5
+  a[0] += 4
+  a[0] *= 5
 
-  return a[1] + a[5]
+  return a[0] + a[4]
 end
 
 assert(arraySizeOpt1({1}) == 71)
@@ -369,10 +369,10 @@ local function arraySizeOpt2(a, i)
   a[i] += 4
   a[i] *= 5
 
-  return a[i] + a[5]
+  return a[i] + a[4]
 end
 
-assert(arraySizeOpt2({1}, 1) == 71)
+assert(arraySizeOpt2({1}, 0) == 71)
 
 function deadLoopBody(n)
   local r = 0
@@ -396,10 +396,10 @@ function arrayIndexingSpecialNumbers1(a, b, c)
   arr[c] = 400000
   arr[c+1] = 3000000
 
-  return arr[1] + arr[255] + arr[256] + arr[257] + arr[65535] + arr[65536] + arr[65537]
+  return arr[0] + arr[255] + arr[256] + arr[257] + arr[65535] + arr[65536] + arr[65537]
 end
 
-assert(arrayIndexingSpecialNumbers1(1, 256, 65536) == 3456789)
+assert(arrayIndexingSpecialNumbers1(0, 256, 65536) == 3456789)
 
 function loopIteratorProtocol(a, t)
   local sum = 0
@@ -409,7 +409,7 @@ function loopIteratorProtocol(a, t)
   end
 
   for k, v in ipairs(t) do
-    if k == 10 then sum += math.abs('-8') end
+    if k == 9 then sum += math.abs('-8') end
 
     sum += k
   end
@@ -417,7 +417,7 @@ function loopIteratorProtocol(a, t)
   return sum
 end
 
-assert(loopIteratorProtocol(0, table.create(100, 5)) == 5058)
+assert(loopIteratorProtocol(0, table.create(100, 5)) == 4958)
 
 function valueTrackingIssue1()
   local b = buffer.create(1)
@@ -429,7 +429,7 @@ function valueTrackingIssue1()
     v1 = nil -- v1 is the second upvalue
 
     -- prevent inlining
-    for i = 1, 100 do print(`{b} is {b}`) end
+    for i = 1, 101 do print(`{b} is {b}`) end
   end
 
   closure()
@@ -625,7 +625,7 @@ function deadStoreChecks1()
 
   local function update()
     b += a
-    for i = 1, 100 do print(`{b} is {b}`) end
+    for i = 1, 101 do print(`{b} is {b}`) end
   end
 
   update()
@@ -767,7 +767,7 @@ end
 do
   local a, b, c, t = forcedregisterspill1(2, 20, 10)
   assert(a == 150 and b == 510 and c == 1100)
-  assert(t[1] == 150 and t[2] == 510 and t[3] == 1100)
+  assert(t[0] == 150 and t[1] == 510 and t[2] == 1100)
 end
 
 local function splitStoreRestore(x)

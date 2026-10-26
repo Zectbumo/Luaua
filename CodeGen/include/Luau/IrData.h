@@ -444,7 +444,7 @@ enum class IrCmd : uint8_t
     // E: block (if false)
     JUMP_CMP_FLOAT,
 
-    // Perform jump based on a numerical loop condition (step > 0 ? idx <= limit : limit <= idx)
+    // Perform jump based on a numerical loop condition (step > 0 ? idx < limit : limit < idx)
     // A: double (index)
     // B: double (limit)
     // C: double (step)

@@ -93,7 +93,7 @@ struct BytecodeCompilerFixture
     {
         std::string bytecode = bcb.getBytecode();
         const char* data = bytecode.data();
-        size_t offset = 2; // skip versions
+        size_t offset = 3; // skip Luaua marker and bytecode/type versions
         std::vector<std::string> result;
         uint32_t stringsCount = readVarInt(data, offset);
         for (uint32_t i = 0; i < stringsCount; i++)
@@ -752,7 +752,7 @@ TEST_CASE_FIXTURE(BytecodeCompilerFixture, "variadic_function")
         local function fn(a, ...)
             local b, c = ...
             local l = {...}
-            return a + b + c + l[1], ...
+            return a + b + c + l[0], ...
         end
     )");
 
@@ -764,7 +764,7 @@ TEST_CASE_FIXTURE(BytecodeCompilerFixture, "variadic_function")
         SETLIST R3 R4 -1 [1]
         ADD R6 R0 R1
         ADD R5 R6 R2
-        LOADK R7 K0 [1]
+        LOADK R7 K0 [0]
         GETTABLE R6 R3 R7
         ADD R4 R5 R6
         GETVARARGS R5 -1
@@ -986,6 +986,73 @@ TEST_CASE_FIXTURE(BytecodeCompilerFixture, "loop_invariant_inst_phi_collapse")
     REQUIRE_FALSE(consumers == 0);
 }
 
+TEST_CASE_FIXTURE(BytecodeCompilerFixture, "table_n_direct_boundary_keys_roundtrip")
+{
+    BytecodeBuilder builder;
+    uint32_t functionId = builder.beginFunction(0);
+    builder.emitABC(LOP_NEWTABLE, 0, 0, 0);
+    builder.emitAux(0);
+    builder.emitAD(LOP_LOADN, 1, 10);
+    builder.emitABC(LOP_SETTABLEN, 1, 0, 0);
+    builder.emitAD(LOP_LOADN, 1, 20);
+    builder.emitABC(LOP_SETTABLEN, 1, 0, 255);
+    builder.emitABC(LOP_GETTABLEN, 2, 0, 0);
+    builder.emitABC(LOP_GETTABLEN, 3, 0, 255);
+    builder.emitABC(LOP_RETURN, 2, 3, 0);
+    builder.endFunction(4, 0);
+
+    auto verifyKeys = [](CompTimeBcFunction& fn)
+    {
+        std::vector<int32_t> getKeys;
+        std::vector<int32_t> setKeys;
+
+        for (BcInst& inst : fn.instructions)
+        {
+            std::vector<int32_t>* keys = nullptr;
+            size_t operand = 0;
+
+            if (inst.op == LOP_GETTABLEN)
+            {
+                keys = &getKeys;
+                operand = 1;
+            }
+            else if (inst.op == LOP_SETTABLEN)
+            {
+                keys = &setKeys;
+                operand = 2;
+            }
+            else
+                continue;
+
+            REQUIRE(inst.ops.size() > operand);
+            REQUIRE_EQ(inst.ops[operand].kind, BcOpKind::Imm);
+
+            BcImm& key = fn.immOp(inst.ops[operand]);
+            REQUIRE_EQ(key.kind, BcImmKind::Int);
+            keys->push_back(key.valueInt);
+        }
+
+        REQUIRE_EQ(getKeys.size(), 2);
+        REQUIRE_EQ(getKeys[0], 0);
+        REQUIRE_EQ(getKeys[1], 255);
+        REQUIRE_EQ(setKeys.size(), 2);
+        REQUIRE_EQ(setKeys[0], 0);
+        REQUIRE_EQ(setKeys[1], 255);
+    };
+
+    std::vector<std::string> strings;
+    std::optional<CompTimeBcFunction> parsed = fromFunctionBytecode(builder.getFunctionData(functionId), strings);
+    REQUIRE(parsed);
+    verifyKeys(*parsed);
+
+    BytecodeBuilder reserializer;
+    std::string serialized = Bytecode::toFunctionBytecode(reserializer, *parsed);
+
+    std::optional<CompTimeBcFunction> reparsed = fromFunctionBytecode(serialized, strings);
+    REQUIRE(reparsed);
+    verifyKeys(*reparsed);
+}
+
 TEST_CASE_FIXTURE(BytecodeCompilerFixture, "bytecode_roundtrip")
 {
     std::string snippets[] = {
@@ -1045,7 +1112,7 @@ TEST_CASE_FIXTURE(BytecodeCompilerFixture, "bytecode_roundtrip")
         local function fn(a, ...)
             local b, c = ...
             local l = {...}
-            return a + b + c + l[1], ...
+            return a + b + c + l[0], ...
         end
     )",
         R"(

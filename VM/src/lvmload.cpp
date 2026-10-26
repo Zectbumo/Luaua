@@ -286,17 +286,26 @@ static int loadsafe(
 {
     size_t offset = 0;
 
-    uint8_t version = read<uint8_t>(data, size, offset);
-
+    uint8_t marker = read<uint8_t>(data, size, offset);
 
     // 0 means the rest of the bytecode is the error message
-    if (version == 0)
+    if (marker == 0)
     {
         char chunkbuf[LUA_IDSIZE];
         const char* chunkid = luaO_chunkid(chunkbuf, sizeof(chunkbuf), chunkname, strlen(chunkname));
         lua_pushfstring(L, "%s%.*s", chunkid, int(size - offset), data + offset);
         return 1;
     }
+
+    if (marker != LBC_BYTECODE_MARKER)
+    {
+        char chunkbuf[LUA_IDSIZE];
+        const char* chunkid = luaO_chunkid(chunkbuf, sizeof(chunkbuf), chunkname, strlen(chunkname));
+        lua_pushfstring(L, "%s: bytecode dialect mismatch (expected Luaua marker 0x80, got %d)", chunkid, marker);
+        return 1;
+    }
+
+    uint8_t version = read<uint8_t>(data, size, offset);
 
     if ((version < LBC_VERSION_MIN || version > LBC_VERSION_MAX) && version != LBC_VERSION_CLASSES)
     {

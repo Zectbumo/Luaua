@@ -979,7 +979,7 @@ TEST_CASE_FIXTURE(Fixture, "generic_function_with_optional_arg")
         function f<T>(x : T?) : {T}
             local result = {}
             if x then
-                result[1] = x
+                result[0] = x
             end
             return result
         end
@@ -1025,7 +1025,7 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "handle_multiple_optionals")
     CheckResult result = check(R"(
         function f(a: string??)
             if a then
-                print(a:sub(1,1))
+                print(a:sub(0,1))
             end
         end
     )");

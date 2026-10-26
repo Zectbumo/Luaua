@@ -377,7 +377,7 @@ TEST_CASE_FIXTURE(ExternTypeFixture, "table_indexers_are_invariant")
         end
 
         local t2: {[number]: BaseClass} = {BaseClass.New()}
-        t2[1] = AnotherChild.New()
+        t2[0] = AnotherChild.New()
         g(t2) -- line 13.  Breaks soundness
     )");
 
