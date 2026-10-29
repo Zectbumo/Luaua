@@ -7,6 +7,8 @@
 
 #include <optional>
 
+LUAU_FASTFLAG(LuauCodegenUpdateSafeEnvList)
+
 namespace Luau
 {
 namespace CodeGen
@@ -64,6 +66,7 @@ inline bool isNonTerminatingJump(IrCmd cmd)
     case IrCmd::CHECK_READONLY:
     case IrCmd::CHECK_NO_METATABLE:
     case IrCmd::CHECK_SAFE_ENV:
+    case IrCmd::CHECK_YIELDABLE:
     case IrCmd::CHECK_ARRAY_SIZE:
     case IrCmd::CHECK_SLOT_MATCH:
     case IrCmd::CHECK_NODE_NO_NEXT:
@@ -106,6 +109,8 @@ inline bool canInvalidateSafeEnv(IrCmd cmd)
     case IrCmd::FALLBACK_NAMECALL:
     case IrCmd::FALLBACK_FORGPREP:
         return true;
+    case IrCmd::INVOKE_FASTPCALL:
+        return FFlag::LuauCodegenUpdateSafeEnvList;
     default:
         break;
     }

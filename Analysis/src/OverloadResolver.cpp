@@ -12,8 +12,7 @@
 #include "Luau/TypeUtils.h"
 #include "Luau/Unifier2.h"
 
-LUAU_FASTFLAG(LuauBidirectionalInferenceSimplifyTables)
-LUAU_FASTFLAG(LuauNewTypePathErrorMessages)
+LUAU_FASTFLAG(LuauFixCallMetamethodErrorReporting)
 LUAU_FASTFLAG(LuauCallErrorReportingRecoversArgumentLocationsForPacks)
 
 namespace Luau
@@ -180,7 +179,7 @@ OverloadResolution OverloadResolver::resolveOverload(
     TypeId ty,
     TypePackId argsPack,
     Location fnLocation,
-    NotNull<DenseHashSet2<TypeId>> uniqueTypes,
+    NotNull<DenseHashSet<TypeId>> uniqueTypes,
     bool useFreeTypeBounds
 )
 {
@@ -321,6 +320,14 @@ void OverloadResolver::reportErrors(
 {
     std::optional<size_t> argumentIndex = getArgumentIndex(reason.subPath, fnTy);
 
+    // A variadic parameter has no index of its own, so the subPath stops at the tail. The
+    // argument that failed against it is the one the superPath names.
+    if (FFlag::LuauFixCallMetamethodErrorReporting && !argumentIndex)
+    {
+        const TypeId given = arena->addType(FunctionType{argPack, builtinTypes->anyTypePack});
+        argumentIndex = getArgumentIndex(reason.superPath, given);
+    }
+
     Location argLocation;
     // If the Nth argument directly corresponds to a term in the AST, use its location.
     if (argumentIndex && *argumentIndex < argExprs.size())
@@ -438,12 +445,8 @@ void OverloadResolver::reportErrors(
             FFlag::LuauCallErrorReportingRecoversArgumentLocationsForPacks ? truncatePathAtUnionOrIntersection(superPathTail) : superPathTail;
         Path truncatedSubPathTail =
             FFlag::LuauCallErrorReportingRecoversArgumentLocationsForPacks ? truncatePathAtUnionOrIntersection(reason.subPath) : reason.subPath;
-        std::optional<TypeOrPack> failedSub = (FFlag::LuauNewTypePathErrorMessages)
-                                                  ? traverse(argPack, truncatedSuperPathTail, builtinTypes, arena, &subMetadata)
-                                                  : traverse_DEPRECATED(argPack, truncatedSuperPathTail, builtinTypes, arena);
-        std::optional<TypeOrPack> failedSuper = (FFlag::LuauNewTypePathErrorMessages)
-                                                    ? traverse(fnTy, truncatedSubPathTail, builtinTypes, arena, &superMetadata)
-                                                    : traverse_DEPRECATED(fnTy, truncatedSubPathTail, builtinTypes, arena);
+        std::optional<TypeOrPack> failedSub = traverse(argPack, truncatedSuperPathTail, builtinTypes, arena, &subMetadata);
+        std::optional<TypeOrPack> failedSuper = traverse(fnTy, truncatedSubPathTail, builtinTypes, arena, &superMetadata);
 
         maybeEmplaceError(&errors, argLocation, moduleName, &reason, failedSuper, failedSub);
         return;
@@ -493,7 +496,7 @@ void OverloadResolver::testFunction(
     TypeId fnTy,
     TypePackId argsPack,
     Location fnLocation,
-    NotNull<DenseHashSet2<TypeId>> uniqueTypes
+    NotNull<DenseHashSet<TypeId>> uniqueTypes
 )
 {
     fnTy = follow(fnTy);
@@ -535,9 +538,6 @@ void OverloadResolver::testFunction(
     }
 
     TypeId prospectiveFunction = arena->addType(FunctionType{argsPack, builtinTypes->anyTypePack});
-
-    if (!FFlag::LuauBidirectionalInferenceSimplifyTables)
-        subtyping.uniqueTypes = uniqueTypes;
 
     SubtypingResult r = subtyping.isSubtype(fnTy, prospectiveFunction, scope);
 
@@ -588,7 +588,7 @@ void OverloadResolver::testFunctionOrUnion(
     TypeId fnTy,
     TypePackId argsPack,
     Location fnLocation,
-    NotNull<DenseHashSet2<TypeId>> uniqueTypes
+    NotNull<DenseHashSet<TypeId>> uniqueTypes
 )
 {
     LUAU_ASSERT(fnTy == follow(fnTy));
@@ -642,7 +642,7 @@ void OverloadResolver::testFunctionOrCallMetamethod(
     TypeId fnTy,
     TypePackId argsPack,
     Location fnLocation,
-    NotNull<DenseHashSet2<TypeId>> uniqueTypes
+    NotNull<DenseHashSet<TypeId>> uniqueTypes
 )
 {
     fnTy = follow(fnTy);
@@ -713,20 +713,32 @@ void OverloadResolver::maybeEmplaceError(
             // intentionally fallthrough here since we couldn't prove this was error-suppressing
             [[fallthrough]];
         case ErrorSuppression::DoNotSuppress:
+        {
             // TODO extract location from the SubtypingResult path and argExprs
+            TypeMismatch::Context context = TypeMismatch::CovariantContext;
             switch (reason->variance)
             {
             case SubtypingVariance::Covariant:
             case SubtypingVariance::Contravariant:
-                errors->emplace_back(argLocation, moduleName, TypeMismatch{*wantedType, *givenType, TypeMismatch::CovariantContext});
+                context = TypeMismatch::CovariantContext;
                 break;
             case SubtypingVariance::Invariant:
-                errors->emplace_back(argLocation, moduleName, TypeMismatch{*wantedType, *givenType, TypeMismatch::InvariantContext});
+                context = TypeMismatch::InvariantContext;
                 break;
             default:
                 LUAU_ASSERT(0);
                 break;
             }
+
+            if (reason->isPropertyModifierViolation)
+            {
+                std::string reasonStr = explainPropertyModifierViolation(reason->subPath);
+                errors->emplace_back(argLocation, moduleName, TypeMismatch{*wantedType, *givenType, std::move(reasonStr), context});
+            }
+            else
+                errors->emplace_back(argLocation, moduleName, TypeMismatch{*wantedType, *givenType, context});
+            break;
+        }
         }
     }
 }

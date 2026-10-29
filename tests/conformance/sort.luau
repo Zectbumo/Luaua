@@ -99,8 +99,9 @@ a = {"álo", "\0first :-)", "alo", "then this one", "45", "and a new"}
 table.sort(a)
 check(a)
 
+-- check for 'table modified during sorting'
 local ok = pcall(table.sort, a, function (x, y)
-          loadstring(string.format("a[%q] = ''", x))()
+          loadstring("a[7] = ''")() -- hide the modification from the lexical scope
           collectgarbage()
           return x<y
         end)
