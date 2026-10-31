@@ -7,6 +7,7 @@
 --   luau -O0 tests/conformance/zero_based.luau
 --   luau -O2 tests/conformance/zero_based.luau
 --   luau --codegen-cold -O2 tests/conformance/zero_based.luau
+--   luau --codegen-lazy -O2 tests/conformance/zero_based.luau
 --   luau-analyze tests/conformance/zero_based.luau
 --
 -- Contract:
